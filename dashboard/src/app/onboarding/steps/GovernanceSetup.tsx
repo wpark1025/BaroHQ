@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, Eye, Upload, Check } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Shield, Eye, Upload, Check, Plus, X, FileUp, ChevronDown } from 'lucide-react';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { RuleCategory, EnforcementLevel } from '@/lib/types';
 import type { GovernanceRule } from '@/lib/types';
@@ -125,9 +125,24 @@ const RULE_TEMPLATES: {
   },
 ];
 
+const CATEGORY_OPTIONS: { value: RuleCategory; label: string }[] = [
+  { value: RuleCategory.Coding, label: 'Coding' },
+  { value: RuleCategory.Design, label: 'Design' },
+  { value: RuleCategory.Legal, label: 'Legal' },
+  { value: RuleCategory.Security, label: 'Security' },
+  { value: RuleCategory.Process, label: 'Process' },
+  { value: RuleCategory.Communication, label: 'Communication' },
+  { value: RuleCategory.Custom, label: 'Custom' },
+];
+
 export default function GovernanceSetup() {
   const { governanceSetup, setGovernanceSetup } = useOnboardingStore();
-  const [previewRule, setPreviewRule] = useState<string | null>(null);
+  const [expandedRule, setExpandedRule] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importName, setImportName] = useState('');
+  const [importCategory, setImportCategory] = useState<RuleCategory>(RuleCategory.Custom);
+  const [importContent, setImportContent] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const enabledIds = governanceSetup.rules.map((r) => r.id);
 
@@ -165,6 +180,88 @@ export default function GovernanceSetup() {
     }
   };
 
+  const updateRuleContent = useCallback(
+    (ruleId: string, newContent: string) => {
+      setGovernanceSetup({
+        rules: governanceSetup.rules.map((r) =>
+          r.id === ruleId
+            ? { ...r, content: newContent, updatedAt: new Date().toISOString() }
+            : r
+        ),
+      });
+    },
+    [governanceSetup.rules, setGovernanceSetup]
+  );
+
+  const handleImportSubmit = () => {
+    if (!importName.trim() || !importContent.trim()) return;
+
+    const rule: GovernanceRule = {
+      id: `custom-${Date.now()}`,
+      name: importName.trim(),
+      category: importCategory,
+      status: 'active',
+      enforcer: '',
+      enforcerName: '',
+      version: 1,
+      content: importContent.trim(),
+      contentFormat: 'markdown',
+      tags: [],
+      scope: 'global',
+      scopeTeams: [],
+      enforcement: EnforcementLevel.Warn,
+      history: [],
+      createdBy: 'onboarding',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setGovernanceSetup({
+      rules: [...governanceSetup.rules, rule],
+    });
+
+    setImportName('');
+    setImportCategory(RuleCategory.Custom);
+    setImportContent('');
+    setShowImportModal(false);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result;
+      if (typeof text === 'string') {
+        setImportContent(text);
+        // Use the filename (without extension) as the default name
+        const nameWithoutExt = file.name.replace(/\.md$/, '').replace(/[-_]/g, ' ');
+        if (!importName.trim()) {
+          setImportName(nameWithoutExt);
+        }
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeCustomRule = (ruleId: string) => {
+    setGovernanceSetup({
+      rules: governanceSetup.rules.filter((r) => r.id !== ruleId),
+    });
+  };
+
+  // Separate template-based rules from custom-imported rules
+  const templateIds = RULE_TEMPLATES.map((t) => t.id);
+  const customRules = governanceSetup.rules.filter(
+    (r) => !templateIds.includes(r.id)
+  );
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -176,7 +273,7 @@ export default function GovernanceSetup() {
         </h2>
         <p className="text-slate-400 mt-2 text-sm">
           Enable built-in rule templates to guide your AI agents. You can
-          customize these later.
+          expand and edit each rule below.
         </p>
       </div>
 
@@ -184,7 +281,10 @@ export default function GovernanceSetup() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {RULE_TEMPLATES.map((template) => {
             const isEnabled = enabledIds.includes(template.id);
-            const isPreviewing = previewRule === template.id;
+            const isExpanded = expandedRule === template.id;
+            const currentRule = governanceSetup.rules.find(
+              (r) => r.id === template.id
+            );
 
             return (
               <div
@@ -227,20 +327,30 @@ export default function GovernanceSetup() {
 
                   <button
                     onClick={() =>
-                      setPreviewRule(isPreviewing ? null : template.id)
+                      setExpandedRule(isExpanded ? null : template.id)
                     }
                     className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
                   >
                     <Eye className="w-3 h-3" />
-                    {isPreviewing ? 'Hide Preview' : 'Preview Rules'}
+                    {isExpanded ? 'Collapse' : isEnabled ? 'View & Edit' : 'Preview Rules'}
                   </button>
                 </div>
 
-                {isPreviewing && (
-                  <div className="border-t border-slate-700 p-4 bg-slate-900/50 max-h-48 overflow-y-auto">
-                    <pre className="text-[11px] text-slate-400 whitespace-pre-wrap font-mono leading-relaxed">
-                      {template.content}
-                    </pre>
+                {isExpanded && (
+                  <div className="border-t border-slate-700 p-4 bg-slate-900/50">
+                    {isEnabled && currentRule ? (
+                      <textarea
+                        value={currentRule.content}
+                        onChange={(e) =>
+                          updateRuleContent(template.id, e.target.value)
+                        }
+                        className="w-full h-48 bg-slate-950 border border-slate-700 rounded p-3 text-[11px] text-slate-300 font-mono leading-relaxed resize-y focus:outline-none focus:border-amber-500"
+                      />
+                    ) : (
+                      <pre className="text-[11px] text-slate-400 whitespace-pre-wrap font-mono leading-relaxed max-h-48 overflow-y-auto">
+                        {template.content}
+                      </pre>
+                    )}
                   </div>
                 )}
               </div>
@@ -248,14 +358,182 @@ export default function GovernanceSetup() {
           })}
         </div>
 
+        {/* Custom imported rules */}
+        {customRules.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-sm font-bold text-slate-300 mb-3">
+              Custom Rules
+            </h3>
+            <div className="space-y-3">
+              {customRules.map((rule) => {
+                const isExpanded = expandedRule === rule.id;
+                return (
+                  <div
+                    key={rule.id}
+                    className="rounded-lg border-2 border-amber-500/50 bg-slate-800/80 overflow-hidden"
+                  >
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">📄</span>
+                          <div>
+                            <h3 className="font-bold text-sm text-slate-100">
+                              {rule.name}
+                            </h3>
+                            <span className="text-[10px] text-slate-500 capitalize">
+                              {rule.category}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeCustomRule(rule.id)}
+                          className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                          title="Remove rule"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setExpandedRule(isExpanded ? null : rule.id)
+                        }
+                        className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+                      >
+                        <Eye className="w-3 h-3" />
+                        {isExpanded ? 'Collapse' : 'View & Edit'}
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="border-t border-slate-700 p-4 bg-slate-900/50">
+                        <textarea
+                          value={rule.content}
+                          onChange={(e) =>
+                            updateRuleContent(rule.id, e.target.value)
+                          }
+                          className="w-full h-48 bg-slate-950 border border-slate-700 rounded p-3 text-[11px] text-slate-300 font-mono leading-relaxed resize-y focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Import Custom */}
         <div className="mt-6 text-center">
-          <button className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-sm text-slate-300 transition-colors">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-sm text-slate-300 transition-colors"
+          >
             <Upload className="w-4 h-4" />
-            Import Custom Rules
+            Import Custom Rule
           </button>
         </div>
       </div>
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-lg mx-4">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+              <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-amber-400" />
+                Import Custom Rule
+              </h3>
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Rule Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={importName}
+                  onChange={(e) => setImportName(e.target.value)}
+                  placeholder="My Custom Rule"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Category
+                </label>
+                <div className="relative">
+                  <select
+                    value={importCategory}
+                    onChange={(e) =>
+                      setImportCategory(e.target.value as RuleCategory)
+                    }
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded text-sm text-slate-200 focus:outline-none focus:border-amber-500 appearance-none pr-8"
+                  >
+                    {CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-slate-400">
+                    Content <span className="text-red-400">*</span>
+                  </label>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 transition-colors"
+                  >
+                    <FileUp className="w-3 h-3" />
+                    Upload .md file
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".md"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
+                <textarea
+                  value={importContent}
+                  onChange={(e) => setImportContent(e.target.value)}
+                  placeholder="Paste your rule content here (Markdown supported)..."
+                  rows={10}
+                  className="w-full bg-slate-950 border border-slate-700 rounded p-3 text-xs text-slate-300 font-mono leading-relaxed resize-y focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 px-5 py-4 border-t border-slate-700">
+              <button
+                onClick={() => setShowImportModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-sm text-slate-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImportSubmit}
+                disabled={!importName.trim() || !importContent.trim()}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 rounded text-sm font-medium text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Add Rule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

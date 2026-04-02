@@ -14,18 +14,31 @@
         "haiku": "claude-haiku-4-5-20251001"
       },
       "pricing": {
-        "opus": { "inputPer1M": 15, "outputPer1M": 75 },
-        "sonnet": { "inputPer1M": 3, "outputPer1M": 15 },
-        "haiku": { "inputPer1M": 1, "outputPer1M": 5 }
+        "opus": {
+          "inputPer1M": 15,
+          "outputPer1M": 75
+        },
+        "sonnet": {
+          "inputPer1M": 3,
+          "outputPer1M": 15
+        },
+        "haiku": {
+          "inputPer1M": 1,
+          "outputPer1M": 5
+        }
       },
-      "lastHealthCheck": null,
+      "lastHealthCheck": "2026-04-02T15:15:34.739Z",
       "createdAt": null
     }
   ],
   "routing": {
     "strategy": "priority",
     "fallbackEnabled": true,
-    "fallbackTriggers": ["rate_limited", "down", "error"],
+    "fallbackTriggers": [
+      "rate_limited",
+      "down",
+      "error"
+    ],
     "retryAttempts": 2
   }
 }

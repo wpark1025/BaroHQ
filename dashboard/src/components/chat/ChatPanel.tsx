@@ -1,23 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-import { MessageSquare, X } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { MessageSquare, X, Wifi, WifiOff } from 'lucide-react';
 import ChannelSidebar from './ChannelSidebar';
 import ChannelView from './ChannelView';
 import DirectMessage from './DirectMessage';
+import { useChatStore } from '@/store/useChatStore';
+import { useAgentStore } from '@/store/useAgentStore';
 import type { Channel } from '@/lib/types';
 
-const DEMO_CHANNELS: Channel[] = [
-  { id: 'general', name: 'general', type: 'general', members: [], teamId: '', unread: 2 },
-  { id: 'engineering', name: 'engineering', type: 'team', members: [], teamId: 'eng', unread: 5 },
-  { id: 'design', name: 'design', type: 'team', members: [], teamId: 'design', unread: 0 },
-  { id: 'dm-jordan', name: 'Jordan Blake', type: 'direct', members: ['jordan'], teamId: '', unread: 1 },
-  { id: 'dm-riley', name: 'Riley Kim', type: 'direct', members: ['riley'], teamId: '', unread: 0 },
-];
-
 export default function ChatPanel() {
+  const channels = useChatStore((s) => s.channels);
+  const agents = useAgentStore((s) => s.agents);
+
+  // Build channels from store, or generate defaults from agents
+  const displayChannels: Channel[] = useMemo(() => {
+    if (channels.length > 0) return channels;
+
+    // Generate default channels from current agents
+    const defaults: Channel[] = [
+      { id: 'general', name: 'general', type: 'general', members: [], teamId: '', unread: 0 },
+    ];
+
+    // Add DM channels for each agent
+    agents.forEach((agent) => {
+      defaults.push({
+        id: `dm-${agent.id}`,
+        name: agent.name,
+        type: 'direct',
+        members: [agent.id],
+        teamId: '',
+        unread: 0,
+      });
+    });
+
+    return defaults;
+  }, [channels, agents]);
+
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(
-    DEMO_CHANNELS[0]
+    displayChannels[0] ?? null
   );
   const [showChannelList, setShowChannelList] = useState(true);
 
@@ -44,7 +65,7 @@ export default function ChatPanel() {
       <div className="flex-1 flex overflow-hidden">
         {showChannelList && (
           <ChannelSidebar
-            channels={DEMO_CHANNELS}
+            channels={displayChannels}
             selectedId={selectedChannel?.id ?? ''}
             onSelect={(ch) => {
               setSelectedChannel(ch);

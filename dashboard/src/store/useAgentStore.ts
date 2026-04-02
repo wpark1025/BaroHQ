@@ -4,6 +4,7 @@ import type { Agent, UsageData } from '@/lib/types';
 interface AgentStore {
   agents: Agent[];
   selectedAgent: Agent | null;
+  selectedTeam: string | null;
   usage: UsageData | null;
   priorities: Record<string, string[]>; // teamId -> ordered agent ids
 
@@ -12,16 +13,19 @@ interface AgentStore {
   removeAgent: (id: string) => void;
   updateAgent: (id: string, updates: Partial<Agent> | Record<string, unknown>) => void;
   selectAgent: (agent: Agent | null) => void;
+  setSelectedTeam: (teamId: string | null) => void;
   setUsage: (usage: UsageData) => void;
   setPriorities: (teamId: string, agentIds: string[]) => void;
 
   getAgentsByTeam: (teamId: string) => Agent[];
+  getFilteredAgents: () => Agent[];
   getAgentById: (id: string) => Agent | undefined;
 }
 
 export const useAgentStore = create<AgentStore>((set, get) => ({
   agents: [],
   selectedAgent: null,
+  selectedTeam: null,
   usage: null,
   priorities: {},
 
@@ -49,6 +53,8 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   selectAgent: (agent) => set({ selectedAgent: agent }),
 
+  setSelectedTeam: (teamId) => set({ selectedTeam: teamId }),
+
   setUsage: (usage) => set({ usage }),
 
   setPriorities: (teamId, agentIds) =>
@@ -57,6 +63,12 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     })),
 
   getAgentsByTeam: (teamId) => get().agents.filter((a) => a.teamId === teamId),
+
+  getFilteredAgents: () => {
+    const { agents, selectedTeam } = get();
+    if (!selectedTeam) return agents;
+    return agents.filter((a) => a.teamId === selectedTeam);
+  },
 
   getAgentById: (id) => get().agents.find((a) => a.id === id),
 }));

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Users2, Plus, X } from 'lucide-react';
+import { Users2, Plus, X, ChevronDown } from 'lucide-react';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
 import {
   HAIR_COLORS,
@@ -10,6 +10,7 @@ import {
   SKIN_COLORS,
   TEAM_COLORS,
   DEFAULT_APPEARANCE,
+  PROVIDER_PRESETS,
 } from '@/lib/constants';
 import { AgentStatus } from '@/lib/types';
 import type { AgentConfig, AgentAppearance } from '@/lib/types';
@@ -20,6 +21,12 @@ const EMOJIS = [
   '🚀', '💡', '🎯', '⚡', '🔥', '🌟', '🎮', '🛠️',
   '📊', '🎨', '🔬', '🏗️', '📱', '🤖', '🧪', '🎪',
 ];
+
+function getModelsForProvider(providerId: string) {
+  const preset = PROVIDER_PRESETS.find((p) => p.type === providerId);
+  if (!preset) return null;
+  return preset.models;
+}
 
 function MiniColorPicker({
   selected,
@@ -42,6 +49,63 @@ function MiniColorPicker({
           style={{ backgroundColor: c }}
         />
       ))}
+    </div>
+  );
+}
+
+function ProviderModelSelector({
+  providerId,
+  modelTier,
+  onProviderChange,
+  onModelChange,
+}: {
+  providerId: string;
+  modelTier: string;
+  onProviderChange: (v: string) => void;
+  onModelChange: (v: string) => void;
+}) {
+  const providerModels = getModelsForProvider(providerId);
+
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-2">
+      <div className="relative">
+        <select
+          value={providerId}
+          onChange={(e) => onProviderChange(e.target.value)}
+          className="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-300 focus:outline-none focus:border-blue-500 appearance-none pr-6"
+        >
+          <option value="">Provider</option>
+          {PROVIDER_PRESETS.map((p) => (
+            <option key={p.type} value={p.type}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="w-3 h-3 text-slate-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
+
+      <div className="relative">
+        <select
+          value={modelTier}
+          onChange={(e) => onModelChange(e.target.value)}
+          className="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-300 focus:outline-none focus:border-blue-500 appearance-none pr-6"
+        >
+          {providerModels ? (
+            providerModels.map((m) => (
+              <option key={m.tier} value={m.tier}>
+                {m.tier.charAt(0).toUpperCase() + m.tier.slice(1)} — {m.name}
+              </option>
+            ))
+          ) : (
+            <>
+              <option value="opus">Opus (High)</option>
+              <option value="sonnet">Sonnet (Mid)</option>
+              <option value="haiku">Haiku (Low)</option>
+            </>
+          )}
+        </select>
+        <ChevronDown className="w-3 h-3 text-slate-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
     </div>
   );
 }
@@ -96,6 +160,12 @@ function AgentCard({
               onUpdate({ role: roleId, title: roleName })
             }
           />
+          <ProviderModelSelector
+            providerId={agent.providerId || ''}
+            modelTier={agent.modelTier || 'sonnet'}
+            onProviderChange={(v) => onUpdate({ providerId: v })}
+            onModelChange={(v) => onUpdate({ modelTier: v })}
+          />
         </div>
       </div>
 
@@ -131,7 +201,7 @@ export default function FirstTeam() {
   const { firstTeam, setFirstTeam } = useOnboardingStore();
 
   const addAgent = () => {
-    if (firstTeam.agents.length >= 3) return;
+    if (firstTeam.agents.length >= 10) return;
     const newAgent: AgentConfig = {
       id: `agent-${Date.now()}`,
       name: '',
@@ -139,7 +209,7 @@ export default function FirstTeam() {
       title: 'Engineer',
       appearance: {
         ...DEFAULT_APPEARANCE,
-        shirt: SHIRT_COLORS[firstTeam.agents.length + 2],
+        shirt: SHIRT_COLORS[(firstTeam.agents.length + 2) % SHIRT_COLORS.length],
       },
       providerId: '',
       modelTier: 'sonnet',
@@ -276,17 +346,15 @@ export default function FirstTeam() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-slate-300">
-              Team Members ({firstTeam.agents.length}/3)
+              Team Members ({firstTeam.agents.length})
             </h3>
-            {firstTeam.agents.length < 3 && (
-              <button
-                onClick={addAgent}
-                className="flex items-center gap-1 px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-                Add Agent
-              </button>
-            )}
+            <button
+              onClick={addAgent}
+              className="flex items-center gap-1 px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs text-slate-300 transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              Add Agent
+            </button>
           </div>
 
           <div className="space-y-3">

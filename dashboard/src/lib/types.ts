@@ -77,6 +77,7 @@ export enum ApprovalStatus {
 export enum ProviderType {
   ClaudeCode = 'claude_code',
   ClaudeAPI = 'claude_api',
+  GeminiCli = 'gemini_cli',
   Gemini = 'gemini',
   OpenAI = 'openai',
   OpenRouter = 'open_router',
@@ -149,8 +150,9 @@ export interface AgentConfig {
   role: string;
   title: string;
   appearance: AgentAppearance;
-  providerId: string;
-  modelTier: string;
+  providerId?: string;
+  modelTier?: string;
+  isHuman?: boolean;
   mcpConnections: string[];
   status: AgentStatus;
 }

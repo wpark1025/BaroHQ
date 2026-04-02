@@ -1,42 +1,14 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send } from 'lucide-react';
+import { useChatStore } from '@/store/useChatStore';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import type { Channel, Message } from '@/lib/types';
 
 interface ChannelViewProps {
   channel: Channel;
 }
-
-const DEMO_MESSAGES: Message[] = [
-  {
-    id: '1',
-    channelId: 'general',
-    author: 'Alex Sterling',
-    text: 'Good morning team. Sprint planning starts at 10.',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    reactions: [{ emoji: '👍', users: ['jordan', 'casey'] }],
-    thread: [],
-  },
-  {
-    id: '2',
-    channelId: 'general',
-    author: 'Jordan Blake',
-    text: 'I\'ll have the API endpoints ready for review by then.',
-    timestamp: new Date(Date.now() - 2400000).toISOString(),
-    reactions: [],
-    thread: [],
-  },
-  {
-    id: '3',
-    channelId: 'general',
-    author: 'Riley Kim',
-    text: 'Design specs are uploaded to the shared drive. Please review.',
-    timestamp: new Date(Date.now() - 1200000).toISOString(),
-    reactions: [{ emoji: '🎨', users: ['alex'] }],
-    thread: [],
-  },
-];
 
 function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -70,7 +42,9 @@ function getAvatarColor(name: string): string {
 }
 
 export default function ChannelView({ channel }: ChannelViewProps) {
-  const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
+  const storeMessages = useChatStore((s) => s.getMessagesForChannel(channel.id));
+  const addMessage = useChatStore((s) => s.addMessage);
+  const { send, connected } = useWebSocket();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -78,9 +52,9 @@ export default function ChannelView({ channel }: ChannelViewProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [storeMessages]);
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     if (!input.trim()) return;
 
     const newMessage: Message = {
@@ -93,9 +67,22 @@ export default function ChannelView({ channel }: ChannelViewProps) {
       thread: [],
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    // Add locally
+    addMessage(channel.id, newMessage);
+
+    // Send via WebSocket
+    if (connected) {
+      send({
+        type: 'send_message',
+        payload: {
+          channelId: channel.id,
+          text: input.trim(),
+        },
+      });
+    }
+
     setInput('');
-  };
+  }, [input, channel.id, addMessage, send, connected]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -106,9 +93,21 @@ export default function ChannelView({ channel }: ChannelViewProps) {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
+      {/* Connection status */}
+      <div className={`px-3 py-0.5 text-[9px] ${connected ? 'text-emerald-600' : 'text-red-500'}`}>
+        {connected ? 'Connected' : 'Disconnected'}
+      </div>
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-3">
-        {messages.map((msg) => (
+        {storeMessages.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-[11px] text-slate-600">
+              No messages yet in #{channel.name}
+            </p>
+          </div>
+        )}
+        {storeMessages.map((msg) => (
           <div key={msg.id} className="flex gap-2 group">
             <div
               className={`w-6 h-6 rounded-sm flex items-center justify-center shrink-0 mt-0.5 ${getAvatarColor(

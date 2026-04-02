@@ -54,9 +54,9 @@ export default function CeoSetup() {
         <div className="w-16 h-16 bg-amber-600/20 rounded-lg flex items-center justify-center mx-auto mb-4">
           <Crown className="w-8 h-8 text-amber-400" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-100">Create Your CEO</h2>
+        <h2 className="text-2xl font-bold text-slate-100">Set Up Your Profile</h2>
         <p className="text-slate-400 mt-2 text-sm">
-          Your CEO is the top-level AI agent that oversees all operations.
+          You are the CEO. Customize your avatar for the office dashboard.
         </p>
       </div>
 

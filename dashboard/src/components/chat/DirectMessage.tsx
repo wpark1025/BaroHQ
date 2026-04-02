@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send } from 'lucide-react';
+import { useChatStore } from '@/store/useChatStore';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import type { Channel, Message } from '@/lib/types';
 
 interface DirectMessageProps {
@@ -9,35 +11,9 @@ interface DirectMessageProps {
 }
 
 export default function DirectMessage({ channel }: DirectMessageProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'dm-1',
-      channelId: channel.id,
-      author: channel.name,
-      text: 'Hey, I wanted to discuss the authentication module.',
-      timestamp: new Date(Date.now() - 600000).toISOString(),
-      reactions: [],
-      thread: [],
-    },
-    {
-      id: 'dm-2',
-      channelId: channel.id,
-      author: 'You (CEO)',
-      text: 'Sure, what\'s the current status?',
-      timestamp: new Date(Date.now() - 300000).toISOString(),
-      reactions: [],
-      thread: [],
-    },
-    {
-      id: 'dm-3',
-      channelId: channel.id,
-      author: channel.name,
-      text: 'The OAuth flow is implemented. Need to add MFA support next.',
-      timestamp: new Date(Date.now() - 120000).toISOString(),
-      reactions: [],
-      thread: [],
-    },
-  ]);
+  const storeMessages = useChatStore((s) => s.getMessagesForChannel(channel.id));
+  const addMessage = useChatStore((s) => s.addMessage);
+  const { send, connected } = useWebSocket();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -45,9 +21,9 @@ export default function DirectMessage({ channel }: DirectMessageProps) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [storeMessages]);
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     if (!input.trim()) return;
 
     const newMessage: Message = {
@@ -60,9 +36,20 @@ export default function DirectMessage({ channel }: DirectMessageProps) {
       thread: [],
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    addMessage(channel.id, newMessage);
+
+    if (connected) {
+      send({
+        type: 'send_message',
+        payload: {
+          channelId: channel.id,
+          text: input.trim(),
+        },
+      });
+    }
+
     setInput('');
-  };
+  }, [input, channel.id, addMessage, send, connected]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -79,12 +66,24 @@ export default function DirectMessage({ channel }: DirectMessageProps) {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
+      {/* Connection status */}
+      <div className={`px-3 py-0.5 text-[9px] ${connected ? 'text-emerald-600' : 'text-red-500'}`}>
+        {connected ? 'Connected' : 'Disconnected'}
+      </div>
+
       {/* Messages */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-3 py-2 space-y-2.5"
       >
-        {messages.map((msg) => {
+        {storeMessages.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-[11px] text-slate-600">
+              No messages yet with {channel.name}
+            </p>
+          </div>
+        )}
+        {storeMessages.map((msg) => {
           const isOwn = msg.author.startsWith('You');
           return (
             <div

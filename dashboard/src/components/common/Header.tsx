@@ -10,6 +10,10 @@ import {
 } from 'lucide-react';
 import UsageBar from './UsageBar';
 import AdapterStatus from './AdapterStatus';
+import { useAgentStore } from '@/store/useAgentStore';
+import { useTeamStore } from '@/store/useTeamStore';
+import { useApprovalStore } from '@/store/approvalStore';
+import { useBudgetStore } from '@/store/budgetStore';
 
 interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -18,7 +22,22 @@ interface HeaderProps {
 
 export default function Header({ onToggleSidebar, onToggleChat }: HeaderProps) {
   const [showNewMenu, setShowNewMenu] = useState(false);
-  const pendingApprovals = 3;
+
+  const selectedTeam = useAgentStore((s) => s.selectedTeam);
+  const usage = useAgentStore((s) => s.usage);
+  const teams = useTeamStore((s) => s.teams);
+  const pendingApprovals = useApprovalStore((s) => s.getPendingCount());
+  const budget = useBudgetStore((s) => s.budget);
+
+  // Determine team name for breadcrumb
+  const activeTeam = selectedTeam
+    ? teams.find((t) => t.id === selectedTeam)
+    : null;
+  const teamLabel = activeTeam?.name ?? 'All Teams';
+
+  // Token usage from store or budget
+  const tokenUsed = usage?.tokens ?? 0;
+  const tokenLimit = budget?.monthlyLimit ?? 100000;
 
   return (
     <div className="h-11 bg-slate-900 border-b border-slate-800 flex items-center px-3 gap-3 shrink-0">
@@ -34,14 +53,14 @@ export default function Header({ onToggleSidebar, onToggleChat }: HeaderProps) {
       <div className="flex items-center gap-1.5 text-sm">
         <span className="text-slate-400 font-medium">BaroHQ</span>
         <span className="text-slate-700">/</span>
-        <span className="text-slate-300 font-bold">Office</span>
+        <span className="text-slate-300 font-bold">{teamLabel}</span>
       </div>
 
       {/* Spacer */}
       <div className="flex-1" />
 
       {/* Token Usage */}
-      <UsageBar used={42500} limit={100000} />
+      <UsageBar used={tokenUsed} limit={tokenLimit} />
 
       {/* Provider Health */}
       <AdapterStatus />

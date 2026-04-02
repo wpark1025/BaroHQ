@@ -16,21 +16,22 @@ const STATUS_CONFIG: Record<
 export default function AdapterStatus() {
   const { providers, healthStatus } = useProviderStore();
 
-  // Use demo data if no providers configured
-  const statusItems =
-    providers.length > 0
-      ? providers
-          .filter((p) => p.enabled)
-          .map((p) => ({
-            id: p.id,
-            name: p.name,
-            status: healthStatus[p.id] || p.status,
-          }))
-      : [
-          { id: 'claude', name: 'Claude', status: ProviderStatus.Active },
-          { id: 'openai', name: 'OpenAI', status: ProviderStatus.Active },
-          { id: 'gemini', name: 'Gemini', status: ProviderStatus.Degraded },
-        ];
+  // Only show real providers
+  const statusItems = providers
+    .filter((p) => p.enabled)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: healthStatus[p.id] || p.status,
+    }));
+
+  if (statusItems.length === 0) {
+    return (
+      <div className="flex items-center gap-1" title="No providers configured">
+        <div className="w-2 h-2 rounded-full bg-slate-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1" title="Provider Health">

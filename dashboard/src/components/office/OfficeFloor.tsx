@@ -33,69 +33,18 @@ function renderFurniture(item: (typeof DEFAULT_FLOOR_LAYOUT)[number]) {
 }
 
 export default function OfficeFloor() {
-  const { agents, selectAgent } = useAgentStore();
+  const { agents, selectAgent, selectedTeam } = useAgentStore();
   const [localAgents, setLocalAgents] = useState<Agent[]>([]);
   const animFrameRef = useRef<number>(0);
   const pathsRef = useRef<Map<string, { x: number; y: number }[]>>(new Map());
 
-  // Initialize local agent positions
+  // Initialize local agent positions from store, filtered by team
   useEffect(() => {
-    if (agents.length > 0) {
-      setLocalAgents(agents);
-    } else {
-      // Demo agents if none loaded
-      setLocalAgents([
-        {
-          id: 'demo-ceo',
-          name: 'Alex Sterling',
-          role: 'CEO',
-          status: 'idle' as never,
-          appearance: { hair: '#2d1b00', shirt: '#1e293b', pants: '#1e293b', skin: '#fde8c9' },
-          position: { x: 100, y: 130 },
-          providerId: '',
-          modelTier: 'opus',
-          mcpConnections: [],
-          teamId: 'exec',
-        },
-        {
-          id: 'demo-eng1',
-          name: 'Jordan Blake',
-          role: 'Engineer',
-          status: 'working' as never,
-          appearance: { hair: '#4a3728', shirt: '#3b82f6', pants: '#334155', skin: '#d4a574' },
-          position: { x: 120, y: 310 },
-          providerId: '',
-          modelTier: 'sonnet',
-          mcpConnections: [],
-          teamId: 'eng',
-        },
-        {
-          id: 'demo-eng2',
-          name: 'Casey Morgan',
-          role: 'Engineer',
-          status: 'idle' as never,
-          appearance: { hair: '#c4a35a', shirt: '#22c55e', pants: '#1e3a5f', skin: '#f5d0a9' },
-          position: { x: 620, y: 310 },
-          providerId: '',
-          modelTier: 'sonnet',
-          mcpConnections: [],
-          teamId: 'eng',
-        },
-        {
-          id: 'demo-des1',
-          name: 'Riley Kim',
-          role: 'Designer',
-          status: 'meeting' as never,
-          appearance: { hair: '#d44', shirt: '#ec4899', pants: '#312e81', skin: '#fde8c9' },
-          position: { x: 700, y: 160 },
-          providerId: '',
-          modelTier: 'sonnet',
-          mcpConnections: [],
-          teamId: 'design',
-        },
-      ]);
-    }
-  }, [agents]);
+    const filtered = selectedTeam
+      ? agents.filter((a) => a.teamId === selectedTeam)
+      : agents;
+    setLocalAgents(filtered);
+  }, [agents, selectedTeam]);
 
   // Pathfinding animation loop
   const animate = useCallback(() => {
@@ -132,7 +81,10 @@ export default function OfficeFloor() {
     const clickY = e.clientY - rect.top;
 
     // Move selected agent to clicked position
-    const selectedAgent = localAgents.find((a) => a.id === 'demo-eng1');
+    const { selectedAgent: storeSelected } = useAgentStore.getState();
+    const selectedAgent = storeSelected
+      ? localAgents.find((a) => a.id === storeSelected.id)
+      : localAgents[0];
     if (!selectedAgent) return;
 
     const fromNode = findNearestNode(selectedAgent.position.x, selectedAgent.position.y, NODE_POSITIONS);
@@ -239,10 +191,26 @@ export default function OfficeFloor() {
           />
         ))}
 
+        {/* Empty state */}
+        {localAgents.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-slate-500 font-medium">
+                No agents yet.
+              </p>
+              <p className="text-xs text-slate-600">
+                Complete onboarding to get started.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Grid overlay hint */}
-        <div className="absolute bottom-2 right-2 text-[8px] text-slate-700">
-          Click to move agent
-        </div>
+        {localAgents.length > 0 && (
+          <div className="absolute bottom-2 right-2 text-[8px] text-slate-700">
+            Click to move agent
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,28 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Users, ChevronDown } from 'lucide-react';
+import { Users, ChevronDown, Sparkles } from 'lucide-react';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
-import { EXECUTIVE_ROLES, DEFAULT_APPEARANCE, PROVIDER_PRESETS } from '@/lib/constants';
+import {
+  EXECUTIVE_ROLES,
+  EXECUTIVE_NAMES,
+  EXECUTIVE_PERSONALITIES,
+  DEFAULT_APPEARANCE,
+  PROVIDER_PRESETS,
+} from '@/lib/constants';
 import PixelCharacter from '@/components/office/PixelCharacter';
+
+function getRandomName(roleId: string): string {
+  const names = EXECUTIVE_NAMES[roleId];
+  if (!names || names.length === 0) return '';
+  return names[Math.floor(Math.random() * names.length)];
+}
+
+function getModelsForProvider(providerId: string) {
+  const preset = PROVIDER_PRESETS.find((p) => p.type === providerId);
+  if (!preset) return null;
+  return preset.models;
+}
 
 export default function ExecutiveHiring() {
   const { executives, setExecutives, updateExecutive } = useOnboardingStore();
@@ -15,9 +33,9 @@ export default function ExecutiveHiring() {
         EXECUTIVE_ROLES.map((role) => ({
           id: role.id,
           enabled: role.id === 'cto' || role.id === 'cos',
-          name: '',
+          name: getRandomName(role.id),
           role: role.role,
-          personality: '',
+          personality: EXECUTIVE_PERSONALITIES[role.id] || '',
           providerId: '',
           modelTier: role.defaultModel,
           appearance: { ...DEFAULT_APPEARANCE },
@@ -44,6 +62,8 @@ export default function ExecutiveHiring() {
         {executives.map((exec) => {
           const roleInfo = EXECUTIVE_ROLES.find((r) => r.id === exec.id);
           if (!roleInfo) return null;
+
+          const providerModels = getModelsForProvider(exec.providerId);
 
           return (
             <div
@@ -94,9 +114,17 @@ export default function ExecutiveHiring() {
                 </button>
               </div>
 
-              <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+              <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
                 {roleInfo.description}
               </p>
+
+              {/* Recommended model tier label */}
+              <div className="flex items-center gap-1 mb-3">
+                <Sparkles className="w-3 h-3 text-purple-400" />
+                <span className="text-[10px] text-purple-400">
+                  Recommended: {roleInfo.defaultModel}
+                </span>
+              </div>
 
               {exec.enabled && (
                 <div className="space-y-2 pt-3 border-t border-slate-700">
@@ -151,9 +179,19 @@ export default function ExecutiveHiring() {
                         }
                         className="w-full px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-300 focus:outline-none focus:border-purple-500 appearance-none pr-6"
                       >
-                        <option value="opus">Opus (High)</option>
-                        <option value="sonnet">Sonnet (Mid)</option>
-                        <option value="haiku">Haiku (Low)</option>
+                        {providerModels ? (
+                          providerModels.map((m) => (
+                            <option key={m.tier} value={m.tier}>
+                              {m.tier.charAt(0).toUpperCase() + m.tier.slice(1)} — {m.name}
+                            </option>
+                          ))
+                        ) : (
+                          <>
+                            <option value="opus">Opus (High)</option>
+                            <option value="sonnet">Sonnet (Mid)</option>
+                            <option value="haiku">Haiku (Low)</option>
+                          </>
+                        )}
                       </select>
                       <ChevronDown className="w-3 h-3 text-slate-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>

@@ -167,6 +167,22 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     ],
   },
   {
+    type: ProviderType.GeminiCli,
+    name: 'Gemini CLI',
+    description: 'Google Gemini via Gemini CLI. Uses local gemini binary.',
+    icon: '💎',
+    color: '#4285f4',
+    models: [
+      { tier: 'opus', name: 'gemini-2.5-pro', inputCost: 7, outputCost: 21 },
+      { tier: 'sonnet', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 0.6 },
+      { tier: 'haiku', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.3 },
+    ],
+    requiresApiKey: false,
+    configFields: [
+      { key: 'binaryPath', label: 'Gemini Binary Path', type: 'text', placeholder: '/usr/local/bin/gemini', required: false },
+    ],
+  },
+  {
     type: ProviderType.ClaudeAPI,
     name: 'Claude API',
     description: 'Direct Anthropic API access for Claude models.',
@@ -305,7 +321,7 @@ export const DEFAULT_FLOOR_LAYOUT: FurnitureItem[] = [
 
 export const ONBOARDING_STEPS = [
   { id: 1, title: 'Company', description: 'Set up your company' },
-  { id: 2, title: 'CEO', description: 'Create your CEO agent' },
+  { id: 2, title: 'CEO', description: 'Set up your profile' },
   { id: 3, title: 'Executives', description: 'Hire C-suite agents' },
   { id: 4, title: 'Providers', description: 'Configure AI providers' },
   { id: 5, title: 'First Team', description: 'Create your first team' },
@@ -325,6 +341,32 @@ export const EXECUTIVE_ROLES = [
   { id: 'clo', role: 'Chief Legal Officer', abbrev: 'CLO', description: 'Handles legal compliance, licensing, and policy review.', defaultModel: 'sonnet' },
   { id: 'coo', role: 'Chief Operating Officer', abbrev: 'COO', description: 'Manages day-to-day operations, team coordination, and process.', defaultModel: 'sonnet' },
 ] as const;
+
+// ============================================================
+// Executive Names (random defaults)
+// ============================================================
+
+export const EXECUTIVE_NAMES: Record<string, string[]> = {
+  cos: ['Kai', 'Morgan', 'Avery'],
+  cto: ['Rex', 'Nova', 'Atlas'],
+  cdo: ['Luna', 'Sage', 'Iris'],
+  cfo: ['Quinn', 'Blake', 'Jordan'],
+  clo: ['Harper', 'Rowan', 'Ellis'],
+  coo: ['Phoenix', 'River', 'Dakota'],
+};
+
+// ============================================================
+// Executive Personalities (recommended defaults)
+// ============================================================
+
+export const EXECUTIVE_PERSONALITIES: Record<string, string> = {
+  cos: 'Organized, proactive. Keeps priorities aligned and communication flowing between departments.',
+  cto: 'Technical visionary. Focuses on code quality, architecture decisions, and engineering standards.',
+  cdo: 'Creative perfectionist. Champions user experience, visual consistency, and brand identity.',
+  cfo: 'Analytical and budget-conscious. Tracks spending, optimizes costs, and produces financial reports.',
+  clo: 'Detail-oriented compliance expert. Reviews licenses, policies, and legal requirements.',
+  coo: 'Efficiency-driven. Streamlines processes, monitors team output, and removes blockers.',
+};
 
 // ============================================================
 // Industry Options
@@ -357,9 +399,9 @@ export const MCP_POPULAR_PRESETS = [
 // Appearance Defaults
 // ============================================================
 
-export const HAIR_COLORS = ['#2d1b00', '#4a3728', '#8b6914', '#c4a35a', '#e8d5b7', '#d44', '#e88', '#333', '#888', '#fff'];
-export const SHIRT_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#a855f7', '#f97316', '#06b6d4', '#ec4899', '#eab308', '#6b7280', '#1e293b'];
-export const PANTS_COLORS = ['#1e293b', '#334155', '#1e3a5f', '#312e81', '#3f3f46', '#4a3728', '#1a1a2e', '#0f172a'];
+export const HAIR_COLORS = ['#000000', '#2d1b00', '#4a3728', '#8b6914', '#c4a35a', '#e8d5b7', '#d44', '#e88', '#333', '#888', '#fff', '#b5651d', '#a52a2a', '#deb887'];
+export const SHIRT_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#a855f7', '#f97316', '#06b6d4', '#ec4899', '#eab308', '#6b7280', '#1e293b', '#dc2626', '#059669'];
+export const PANTS_COLORS = ['#000000', '#1e293b', '#334155', '#1e3a5f', '#312e81', '#3f3f46', '#4a3728', '#1a1a2e', '#0f172a', '#1c1917', '#292524', '#3b3b3b'];
 export const SKIN_COLORS = ['#fde8c9', '#f5d0a9', '#d4a574', '#c68642', '#8d5524', '#6b3a1f', '#4a2511'];
 
 export const DEFAULT_APPEARANCE = {

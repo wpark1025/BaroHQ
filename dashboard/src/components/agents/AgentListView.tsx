@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { ArrowUpDown, Search } from 'lucide-react';
 import { useAgentStore } from '@/store/useAgentStore';
+import { useProviderStore } from '@/store/useProviderStore';
 import { AgentStatus } from '@/lib/types';
 import type { Agent } from '@/lib/types';
 import PixelCharacter from '@/components/office/PixelCharacter';
@@ -19,44 +20,21 @@ const STATUS_DOTS: Record<AgentStatus, string> = {
   [AgentStatus.Break]: 'bg-cyan-500',
 };
 
-const DEMO_AGENTS: Agent[] = [
-  {
-    id: '1', name: 'Alex Sterling', role: 'CEO', status: AgentStatus.Idle,
-    appearance: { hair: '#2d1b00', shirt: '#1e293b', pants: '#1e293b', skin: '#fde8c9' },
-    position: { x: 100, y: 120 }, providerId: 'claude_code', modelTier: 'opus', mcpConnections: [], teamId: 'exec',
-  },
-  {
-    id: '2', name: 'Jordan Blake', role: 'Engineer', status: AgentStatus.Working,
-    appearance: { hair: '#4a3728', shirt: '#3b82f6', pants: '#334155', skin: '#d4a574' },
-    position: { x: 100, y: 300 }, providerId: 'claude_api', modelTier: 'sonnet', mcpConnections: ['github'], teamId: 'eng',
-  },
-  {
-    id: '3', name: 'Casey Morgan', role: 'Engineer', status: AgentStatus.Idle,
-    appearance: { hair: '#c4a35a', shirt: '#22c55e', pants: '#1e3a5f', skin: '#f5d0a9' },
-    position: { x: 600, y: 300 }, providerId: 'claude_api', modelTier: 'sonnet', mcpConnections: ['github'], teamId: 'eng',
-  },
-  {
-    id: '4', name: 'Riley Kim', role: 'Designer', status: AgentStatus.Meeting,
-    appearance: { hair: '#d44', shirt: '#ec4899', pants: '#312e81', skin: '#fde8c9' },
-    position: { x: 700, y: 150 }, providerId: 'gemini', modelTier: 'sonnet', mcpConnections: [], teamId: 'design',
-  },
-  {
-    id: '5', name: 'Taylor Hayes', role: 'QA Analyst', status: AgentStatus.Paused,
-    appearance: { hair: '#333', shirt: '#6b7280', pants: '#1e293b', skin: '#c68642' },
-    position: { x: 600, y: 500 }, providerId: 'openai', modelTier: 'haiku', mcpConnections: [], teamId: 'eng',
-  },
-];
-
 export default function AgentListView() {
-  const { agents, selectAgent } = useAgentStore();
+  const { agents, selectAgent, selectedTeam } = useAgentStore();
+  const providers = useProviderStore((s) => s.providers);
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
-  const displayAgents = agents.length > 0 ? agents : DEMO_AGENTS;
+  // Filter by selected team
+  const teamFiltered = useMemo(() => {
+    if (!selectedTeam) return agents;
+    return agents.filter((a) => a.teamId === selectedTeam);
+  }, [agents, selectedTeam]);
 
   const filtered = useMemo(() => {
-    let list = displayAgents;
+    let list = teamFiltered;
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -73,7 +51,7 @@ export default function AgentListView() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [displayAgents, search, sortKey, sortDir]);
+  }, [teamFiltered, search, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -82,6 +60,11 @@ export default function AgentListView() {
       setSortKey(key);
       setSortDir('asc');
     }
+  };
+
+  const getProviderName = (providerId: string): string => {
+    const p = providers.find((prov) => prov.id === providerId);
+    return p?.name ?? (providerId || 'none');
   };
 
   const SortHeader = ({ label, sortKeyName }: { label: string; sortKeyName: SortKey }) => (
@@ -167,7 +150,7 @@ export default function AgentListView() {
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-xs text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
-                    {agent.providerId || 'none'}
+                    {getProviderName(agent.providerId)}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -189,7 +172,9 @@ export default function AgentListView() {
 
         {filtered.length === 0 && (
           <div className="p-8 text-center text-sm text-slate-600">
-            No agents found matching your search.
+            {agents.length === 0
+              ? 'No agents yet. Complete onboarding to get started.'
+              : 'No agents found matching your search.'}
           </div>
         )}
       </div>
