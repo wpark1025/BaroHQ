@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Wrench, Globe, Users, User, Power } from 'lucide-react';
 import { McpConnection, McpConnectionStatus } from '@/lib/types';
-import { useMcpStore } from '@/store/mcpStore';
+import { useMcpStore } from '@/store/useMcpStore';
 
 const STATUS_BADGE: Record<string, string> = {
   [McpConnectionStatus.Connected]: 'bg-green-500/10 text-green-400 border-green-500/30',

@@ -8,7 +8,7 @@ import { ProviderManager } from '@/components/providers/ProviderManager';
 import { McpManager } from '@/components/mcp/McpManager';
 import { BudgetPanel } from '@/components/budget/BudgetPanel';
 import { GovernancePanel } from '@/components/governance/GovernancePanel';
-import { useGovernanceStore } from '@/store/governanceStore';
+import { useGovernanceStore } from '@/store/useGovernanceStore';
 
 type Section = 'general' | 'providers' | 'mcp' | 'budget' | 'tasks' | 'governance' | 'license';
 

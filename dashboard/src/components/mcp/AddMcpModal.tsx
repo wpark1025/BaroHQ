@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useMcpStore } from '@/store/mcpStore';
+import { useMcpStore } from '@/store/useMcpStore';
 import { McpConnectionStatus, McpPreset } from '@/lib/types';
 import { McpPresetGallery } from '@/components/mcp/McpPresetGallery';
 import { McpTestPanel } from '@/components/mcp/McpTestPanel';

@@ -2,7 +2,7 @@
 
 import { X, RotateCcw } from 'lucide-react';
 import type { GovernanceRule } from '@/lib/types';
-import { useGovernanceStore } from '@/store/governanceStore';
+import { useGovernanceStore } from '@/store/useGovernanceStore';
 
 interface RuleVersionHistoryProps {
   rule: GovernanceRule;

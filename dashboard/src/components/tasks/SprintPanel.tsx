@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Play, CheckCircle, Clock, Zap, Target, TrendingUp } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { SprintStatus, TaskStatus, Sprint } from '@/lib/types';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -13,10 +13,10 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export function SprintPanel() {
-  const sprints = useTaskStore((s) => s.sprints);
-  const getTaskById = useTaskStore((s) => s.getTaskById);
-  const updateSprint = useTaskStore((s) => s.updateSprint);
-  const addSprint = useTaskStore((s) => s.addSprint);
+  const sprints = useProjectStore((s) => s.sprints);
+  const getTaskById = useProjectStore((s) => s.getTaskById);
+  const updateSprint = useProjectStore((s) => s.updateSprint);
+  const addSprint = useProjectStore((s) => s.addSprint);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newGoal, setNewGoal] = useState('');
@@ -154,9 +154,11 @@ export function SprintPanel() {
             </div>
             <div className="h-20 flex items-end gap-1">
               {Array.from({ length: 10 }, (_, i) => {
-                const height = Math.max(5, 100 - i * 10 - Math.random() * 15);
+                const remainingPercent = stats.total > 0
+                  ? Math.max(5, 100 - ((stats.done / stats.total) * 100 * ((i + 1) / 10)))
+                  : Math.max(5, 100 - i * 10);
                 return (
-                  <div key={i} className="flex-1 bg-blue-500/30 rounded-t" style={{ height: `${height}%` }} />
+                  <div key={i} className="flex-1 bg-blue-500/30 rounded-t" style={{ height: `${remainingPercent}%` }} />
                 );
               })}
             </div>

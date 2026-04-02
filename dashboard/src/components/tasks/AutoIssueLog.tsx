@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertTriangle, Link2, Bot, ExternalLink } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 
 const SEVERITY_BADGE: Record<string, string> = {
   critical: 'bg-red-500/20 text-red-400 border-red-500/30',
@@ -17,7 +17,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export function AutoIssueLog() {
-  const autoIssues = useTaskStore((s) => s.autoIssues);
+  const autoIssues = useProjectStore((s) => s.autoIssues);
 
   return (
     <div className="space-y-4">

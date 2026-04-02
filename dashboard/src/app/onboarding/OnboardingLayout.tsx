@@ -26,6 +26,16 @@ export default function OnboardingLayout() {
   const canSkip = SKIPPABLE_STEPS.includes(currentStep);
 
   const handleNext = () => {
+    // Validate required fields before advancing
+    const store = useOnboardingStore.getState();
+    if (currentStep === 1 && !store.companyInfo.name.trim()) {
+      alert('Please enter a company name before continuing.');
+      return;
+    }
+    if (currentStep === 2 && !store.ceoConfig.name.trim()) {
+      alert('Please enter your name before continuing.');
+      return;
+    }
     completeStep(currentStep);
     nextStep();
   };

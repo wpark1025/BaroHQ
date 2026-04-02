@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowUpDown, Bug, BookOpen, CheckSquare, Layers, MoreHorizontal,
 } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { Task, TaskType, TaskPriority, TaskStatus } from '@/lib/types';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -37,8 +37,8 @@ type SortField = 'title' | 'status' | 'priority' | 'assignee' | 'storyPoints' | 
 
 export function TaskListView() {
   const router = useRouter();
-  const filteredTasks = useTaskStore((s) => s.getFilteredTasks());
-  const updateTask = useTaskStore((s) => s.updateTask);
+  const filteredTasks = useProjectStore((s) => s.getFilteredTasks());
+  const updateTask = useProjectStore((s) => s.updateTask);
   const [sortField, setSortField] = useState<SortField>('priority');
   const [sortAsc, setSortAsc] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

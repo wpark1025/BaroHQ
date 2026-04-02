@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Send, Loader2, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useProviderStore } from '@/store/providerStore';
+import { useProviderStore } from '@/store/useProviderStore';
 
 interface ProviderTestPanelProps {
   providerId: string;
@@ -22,27 +22,51 @@ export function ProviderTestPanel({ providerId, onClose }: ProviderTestPanelProp
 
   if (!provider) return null;
 
-  const handleTest = () => {
+  const handleTest = async () => {
+    if (!provider.enabled) {
+      setResult({
+        status: 'error',
+        error: `Provider "${provider.name}" is currently disabled. Enable it to test connectivity.`,
+      });
+      return;
+    }
+
     setTesting(true);
     setResult({ status: 'idle' });
     const startTime = Date.now();
-    setTimeout(() => {
+
+    try {
+      const response = await fetch(`/api/providers/${provider.id}/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
       const latency = Date.now() - startTime;
-      if (provider.enabled) {
+
+      if (response.ok) {
+        const data = await response.json();
         setResult({
           status: 'success',
           latency,
-          response: `Hello! I'm responding via ${provider.name}. This is a simulated test response to verify connectivity.`,
+          response: data.response || `Connection to ${provider.name} verified successfully.`,
         });
       } else {
         setResult({
           status: 'error',
           latency,
-          error: `Provider "${provider.name}" is currently disabled. Enable it to test connectivity.`,
+          error: `Provider returned status ${response.status}. Bridge may not be connected.`,
         });
       }
+    } catch {
+      const latency = Date.now() - startTime;
+      setResult({
+        status: 'error',
+        latency,
+        error: 'Not connected — bridge is unreachable. Start the bridge server to test providers.',
+      });
+    } finally {
       setTesting(false);
-    }, 800 + Math.random() * 1200);
+    }
   };
 
   return (

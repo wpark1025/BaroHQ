@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Check, Loader2 } from 'lucide-react';
-import { useProviderStore } from '@/store/providerStore';
+import { useProviderStore } from '@/store/useProviderStore';
 import { ProviderType, ProviderStatus } from '@/lib/types';
 import { ModelMappingEditor } from '@/components/providers/ModelMappingEditor';
 

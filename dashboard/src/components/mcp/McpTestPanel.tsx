@@ -9,7 +9,7 @@ interface McpTestPanelProps {
   onClose?: () => void;
 }
 
-export function McpTestPanel({ connectionName }: McpTestPanelProps) {
+export function McpTestPanel({ connectionId, connectionName }: McpTestPanelProps) {
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<{
     status: 'idle' | 'success' | 'error';
@@ -18,17 +18,39 @@ export function McpTestPanel({ connectionName }: McpTestPanelProps) {
     error?: string;
   }>({ status: 'idle' });
 
-  const handleTest = () => {
+  const handleTest = async () => {
     setTesting(true);
     setResult({ status: 'idle' });
-    setTimeout(() => {
-      setTesting(false);
-      setResult({
-        status: 'success',
-        tools: ['tool_a', 'tool_b', 'tool_c'],
-        latencyMs: 120 + Math.round(Math.random() * 200),
+    const startTime = Date.now();
+
+    try {
+      const response = await fetch(`/api/mcp/${connectionId}/discover`, {
+        method: 'POST',
       });
-    }, 1000 + Math.random() * 1000);
+      const latencyMs = Date.now() - startTime;
+
+      if (response.ok) {
+        const data = await response.json();
+        setResult({
+          status: 'success',
+          tools: data.tools || [],
+          latencyMs,
+        });
+      } else {
+        setResult({
+          status: 'error',
+          latencyMs,
+          error: `Discovery failed with status ${response.status}.`,
+        });
+      }
+    } catch {
+      setResult({
+        status: 'error',
+        error: 'Bridge not connected — unable to discover tools. Start the bridge server first.',
+      });
+    } finally {
+      setTesting(false);
+    }
   };
 
   return (

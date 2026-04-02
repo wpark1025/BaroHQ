@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useProviderStore } from '@/store/providerStore';
+import { useProviderStore } from '@/store/useProviderStore';
 import { ProviderCard } from '@/components/providers/ProviderCard';
 import { AddProviderModal } from '@/components/providers/AddProviderModal';
 import { ProviderTestPanel } from '@/components/providers/ProviderTestPanel';

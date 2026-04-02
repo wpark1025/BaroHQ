@@ -2,15 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Filter, Clock, User, FileText, ChevronDown } from 'lucide-react';
-
-interface AuditEntry {
-  id: string;
-  action: string;
-  actor: string;
-  target: string;
-  details: string;
-  timestamp: string;
-}
+import { useAuditStore } from '@/store/auditStore';
 
 const ACTION_COLORS: Record<string, string> = {
   create: 'bg-green-500/20 text-green-400',
@@ -28,7 +20,7 @@ function getActionColor(action: string): string {
 }
 
 export default function AuditPanel() {
-  const [entries] = useState<AuditEntry[]>([]);
+  const entries = useAuditStore((s) => s.entries);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);

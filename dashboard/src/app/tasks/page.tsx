@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, KanbanSquare, List, GanttChart, Zap } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { TaskBoard } from '@/components/tasks/TaskBoard';
 import { TaskListView } from '@/components/tasks/TaskListView';
 import { TaskTimelineView } from '@/components/tasks/TaskTimelineView';
@@ -19,7 +19,7 @@ const VIEW_TABS = [
 
 export default function TasksPage() {
   const [showCreate, setShowCreate] = useState(false);
-  const { activeView, setActiveView, getFilteredTasks } = useTaskStore();
+  const { activeView, setActiveView, getFilteredTasks } = useProjectStore();
   const tasks = getFilteredTasks();
 
   return (

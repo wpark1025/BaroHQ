@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { Server, Check } from 'lucide-react';
-import { useMcpStore } from '@/store/mcpStore';
+import { useMcpStore } from '@/store/useMcpStore';
+import { useAgentStore } from '@/store/useAgentStore';
+import { useTeamStore } from '@/store/useTeamStore';
 
 interface McpAgentAssignProps {
   agentIds?: string[];
@@ -10,22 +12,10 @@ interface McpAgentAssignProps {
   onAssign?: (connectionId: string, agentIds: string[], teamIds: string[]) => void;
 }
 
-const MOCK_AGENTS = [
-  { id: 'agent-1', name: 'Lead Engineer', team: 'team-eng' },
-  { id: 'agent-2', name: 'Backend Dev', team: 'team-eng' },
-  { id: 'agent-3', name: 'Designer', team: 'team-design' },
-  { id: 'agent-4', name: 'Security Agent', team: 'team-eng' },
-  { id: 'agent-ceo', name: 'CEO', team: 'executive' },
-];
-
-const MOCK_TEAMS = [
-  { id: 'team-eng', name: 'Engineering' },
-  { id: 'team-design', name: 'Design' },
-  { id: 'team-ops', name: 'Operations' },
-];
-
 export function McpAgentAssign({ onAssign }: McpAgentAssignProps) {
   const connections = useMcpStore((s) => s.connections);
+  const agents = useAgentStore((s) => s.agents);
+  const teams = useTeamStore((s) => s.teams);
   const [selectedConnection, setSelectedConnection] = useState(connections[0]?.id || '');
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
   const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set());
@@ -73,7 +63,7 @@ export function McpAgentAssign({ onAssign }: McpAgentAssignProps) {
       <div>
         <label className="block text-xs text-slate-500 uppercase tracking-wide mb-2">Teams</label>
         <div className="space-y-1">
-          {MOCK_TEAMS.map((team) => (
+          {teams.map((team) => (
             <label
               key={team.id}
               className="flex items-center gap-3 p-2 rounded hover:bg-slate-800/50 cursor-pointer transition-colors"
@@ -97,7 +87,7 @@ export function McpAgentAssign({ onAssign }: McpAgentAssignProps) {
       <div>
         <label className="block text-xs text-slate-500 uppercase tracking-wide mb-2">Agents</label>
         <div className="space-y-1">
-          {MOCK_AGENTS.map((agent) => (
+          {agents.map((agent) => (
             <label
               key={agent.id}
               className="flex items-center gap-3 p-2 rounded hover:bg-slate-800/50 cursor-pointer transition-colors"
@@ -112,7 +102,7 @@ export function McpAgentAssign({ onAssign }: McpAgentAssignProps) {
               </div>
               <div className="flex-1">
                 <span className="text-sm text-slate-300">{agent.name}</span>
-                <span className="text-[10px] text-slate-500 ml-2">{agent.team}</span>
+                <span className="text-[10px] text-slate-500 ml-2">{agent.teamId}</span>
               </div>
               <span className="text-[10px] text-slate-500">{agent.id}</span>
             </label>

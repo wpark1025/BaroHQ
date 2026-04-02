@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Search } from 'lucide-react';
-import { useGovernanceStore } from '@/store/governanceStore';
+import { useGovernanceStore } from '@/store/useGovernanceStore';
 import { GovernancePanel } from '@/components/governance/GovernancePanel';
 import { RuleCategoryView } from '@/components/governance/RuleCategoryView';
 import { AddRuleModal } from '@/components/governance/AddRuleModal';

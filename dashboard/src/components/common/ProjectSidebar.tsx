@@ -137,7 +137,7 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
               label="Goals"
               indent={1}
               badge={project.goals?.length}
-              onClick={() => router.push(`/goals?project=${project.id}`)}
+              onClick={() => router.push(`/projects/${project.slug}`)}
             />
             <TreeNode
               icon={<ListTodo className="w-3 h-3 text-emerald-400" />}
@@ -156,7 +156,7 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
               label="Teams"
               indent={1}
               badge={project.teams?.length}
-              onClick={() => router.push(`/teams?project=${project.id}`)}
+              onClick={() => router.push(`/office`)}
             />
           </TreeNode>
         ))}
@@ -186,17 +186,12 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
         <TreeNode
           icon={<DollarSign className="w-3.5 h-3.5 text-green-400" />}
           label="Budget"
-          onClick={() => router.push('/budget')}
+          onClick={() => router.push('/settings?tab=budget')}
         />
         <TreeNode
           icon={<FileText className="w-3.5 h-3.5 text-slate-400" />}
           label="Audit Log"
-          onClick={() => router.push('/audit')}
-        />
-        <TreeNode
-          icon={<BookOpen className="w-3.5 h-3.5 text-cyan-400" />}
-          label="Library"
-          onClick={() => router.push('/library')}
+          onClick={() => router.push('/settings?tab=audit')}
         />
       </div>
 

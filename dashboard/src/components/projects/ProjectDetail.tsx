@@ -2,14 +2,14 @@
 
 import { CheckCircle2, Circle, Clock, Activity, Target, TrendingUp } from 'lucide-react';
 import { Project } from '@/lib/types';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 
 interface ProjectDetailProps {
   project: Project;
 }
 
 export function ProjectDetail({ project }: ProjectDetailProps) {
-  const tasks = useTaskStore((s) => s.getTasksByProject(project.id));
+  const tasks = useProjectStore((s) => s.getTasksByProject(project.id));
   const doneTasks = tasks.filter((t) => t.status === 'done').length;
   const inProgressTasks = tasks.filter((t) => t.status === 'in_progress').length;
   const totalPoints = tasks.reduce((sum, t) => sum + t.storyPoints, 0);

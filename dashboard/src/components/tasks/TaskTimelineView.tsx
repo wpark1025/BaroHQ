@@ -1,7 +1,7 @@
 'use client';
 
 import { Layers, BookOpen, CheckSquare, Bug } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { TaskType, TaskStatus } from '@/lib/types';
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -22,7 +22,7 @@ const STATUS_BAR_COLOR: Record<string, string> = {
 };
 
 export function TaskTimelineView() {
-  const filteredTasks = useTaskStore((s) => s.getFilteredTasks());
+  const filteredTasks = useProjectStore((s) => s.getFilteredTasks());
 
   // Build hierarchy: epics -> stories -> tasks
   const epics = filteredTasks.filter((t) => t.type === TaskType.Epic);

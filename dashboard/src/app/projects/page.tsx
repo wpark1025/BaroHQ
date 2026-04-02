@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Search, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
-import { useProjectStore } from '@/store/projectStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { ProjectPanel } from '@/components/projects/ProjectPanel';
 import { AddProjectModal } from '@/components/projects/AddProjectModal';
 import { ProjectStatus, ProjectPriority } from '@/lib/types';

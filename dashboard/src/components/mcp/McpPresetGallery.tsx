@@ -5,7 +5,7 @@ import {
   Github, MessageSquare, Ticket, Layers, PenTool,
   BookOpen, Database, ShieldAlert, Server,
 } from 'lucide-react';
-import { useMcpStore } from '@/store/mcpStore';
+import { useMcpStore } from '@/store/useMcpStore';
 import { McpPreset } from '@/lib/types';
 
 const ICON_MAP: Record<string, React.ReactNode> = {

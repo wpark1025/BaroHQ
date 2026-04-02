@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { useProjectStore } from '@/store/projectStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { ProjectStatus, ProjectPriority } from '@/lib/types';
 
 interface AddProjectModalProps {

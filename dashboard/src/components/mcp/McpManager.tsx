@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Search, Server, Wrench } from 'lucide-react';
-import { useMcpStore } from '@/store/mcpStore';
+import { useMcpStore } from '@/store/useMcpStore';
 import { McpConnectionCard } from '@/components/mcp/McpConnectionCard';
 import { AddMcpModal } from '@/components/mcp/AddMcpModal';
 import { McpToolBrowser } from '@/components/mcp/McpToolBrowser';

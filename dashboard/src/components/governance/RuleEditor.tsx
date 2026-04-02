@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Save } from 'lucide-react';
-import { useGovernanceStore } from '@/store/governanceStore';
+import { useGovernanceStore } from '@/store/useGovernanceStore';
 import { EnforcementLevel } from '@/lib/types';
 import type { GovernanceRule } from '@/lib/types';
 

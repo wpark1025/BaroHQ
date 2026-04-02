@@ -3,7 +3,7 @@
 import { Shield, Edit, History, ToggleLeft, ToggleRight } from 'lucide-react';
 import type { GovernanceRule } from '@/lib/types';
 import { EnforcementLevel, RuleCategory } from '@/lib/types';
-import { useGovernanceStore } from '@/store/governanceStore';
+import { useGovernanceStore } from '@/store/useGovernanceStore';
 
 const CATEGORY_COLORS: Record<RuleCategory, string> = {
   [RuleCategory.Coding]: 'text-blue-400 bg-blue-500/10',

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { X, Target, User, ListChecks, MessageSquare, Send } from 'lucide-react';
 import type { Goal } from '@/lib/types';
 import { GoalStatus } from '@/lib/types';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 
 const STATUS_BADGE: Record<string, string> = {
   [GoalStatus.NotStarted]: 'bg-slate-500/10 text-slate-400',
@@ -20,7 +20,7 @@ interface GoalDetailProps {
 }
 
 export function GoalDetail({ goal, onClose }: GoalDetailProps) {
-  const getTaskById = useTaskStore((s) => s.getTaskById);
+  const getTaskById = useProjectStore((s) => s.getTaskById);
   const [commentText, setCommentText] = useState('');
 
   const linkedTasks = goal.linkedTasks.map((id) => getTaskById(id)).filter(Boolean);

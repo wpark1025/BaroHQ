@@ -2,32 +2,22 @@
 
 import { useState } from 'react';
 import { Bell, CheckCircle, XCircle, Clock, AlertTriangle, ChevronRight } from 'lucide-react';
+import { useApprovalStore } from '@/store/approvalStore';
+import { ApprovalStatus } from '@/lib/types';
 
-interface Approval {
-  id: string;
-  action: string;
-  description: string;
-  requester: string;
-  approver: string;
-  status: 'pending' | 'approved' | 'rejected' | 'escalated';
-  context: Record<string, string>;
-  createdAt: string;
-  resolvedAt?: string;
-}
-
-const STATUS_STYLES = {
-  pending: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/20', label: 'Pending' },
-  approved: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/20', label: 'Approved' },
-  rejected: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/20', label: 'Rejected' },
-  escalated: { icon: AlertTriangle, color: 'text-orange-400', bg: 'bg-orange-500/20', label: 'Escalated' },
+const STATUS_STYLES: Record<string, { icon: typeof Clock; color: string; bg: string; label: string }> = {
+  [ApprovalStatus.Pending]: { icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/20', label: 'Pending' },
+  [ApprovalStatus.Approved]: { icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/20', label: 'Approved' },
+  [ApprovalStatus.Rejected]: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/20', label: 'Rejected' },
+  [ApprovalStatus.Expired]: { icon: AlertTriangle, color: 'text-orange-400', bg: 'bg-orange-500/20', label: 'Expired' },
 };
 
 export default function ApprovalPanel() {
-  const [approvals] = useState<Approval[]>([]);
+  const approvals = useApprovalStore((s) => s.approvals);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const pending = approvals.filter((a) => a.status === 'pending' || a.status === 'escalated');
-  const resolved = approvals.filter((a) => a.status === 'approved' || a.status === 'rejected');
+  const pending = approvals.filter((a) => a.status === ApprovalStatus.Pending || a.status === ApprovalStatus.Expired);
+  const resolved = approvals.filter((a) => a.status === ApprovalStatus.Approved || a.status === ApprovalStatus.Rejected);
 
   return (
     <div className="flex flex-col h-full">

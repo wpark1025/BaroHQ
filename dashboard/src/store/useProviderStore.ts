@@ -11,10 +11,14 @@ interface RoutingConfig {
 
 interface ProviderStore {
   providers: Provider[];
+  selectedProviderId: string | null;
+  testResult: { status: 'idle' | 'testing' | 'success' | 'error'; latency?: number; response?: string; error?: string };
   routing: RoutingConfig;
   healthStatus: Record<string, ProviderStatus>;
 
   setProviders: (providers: Provider[]) => void;
+  setSelectedProvider: (id: string | null) => void;
+  setTestResult: (r: ProviderStore['testResult']) => void;
   addProvider: (provider: Provider) => void;
   updateProvider: (id: string, updates: Partial<Provider>) => void;
   removeProvider: (id: string) => void;
@@ -30,6 +34,8 @@ interface ProviderStore {
 
 export const useProviderStore = create<ProviderStore>((set, get) => ({
   providers: [],
+  selectedProviderId: null,
+  testResult: { status: 'idle' },
   routing: {
     strategy: 'priority',
     fallbackEnabled: true,
@@ -39,6 +45,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
   healthStatus: {},
 
   setProviders: (providers) => set({ providers }),
+
+  setSelectedProvider: (id) => set({ selectedProviderId: id }),
+
+  setTestResult: (r) => set({ testResult: r }),
 
   addProvider: (provider) =>
     set((state) => ({ providers: [...state.providers, provider] })),
@@ -58,7 +68,13 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
   toggleProvider: (id) =>
     set((state) => ({
       providers: state.providers.map((p) =>
-        p.id === id ? { ...p, enabled: !p.enabled } : p
+        p.id === id
+          ? {
+              ...p,
+              enabled: !p.enabled,
+              status: !p.enabled ? ProviderStatus.Active : ProviderStatus.Disabled,
+            }
+          : p
       ),
     })),
 

@@ -6,7 +6,7 @@ import {
   Tag, Link2, MessageSquare, History, ChevronDown, Send, Plus,
 } from 'lucide-react';
 import { Task, TaskType, TaskStatus, TaskPriority } from '@/lib/types';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 
 const TYPE_META: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   [TaskType.Epic]: { icon: <Layers size={16} />, color: 'text-purple-400 bg-purple-500/10', label: 'Epic' },
@@ -37,8 +37,8 @@ interface TaskDetailProps {
 }
 
 export function TaskDetail({ task }: TaskDetailProps) {
-  const updateTask = useTaskStore((s) => s.updateTask);
-  const getTaskById = useTaskStore((s) => s.getTaskById);
+  const updateTask = useProjectStore((s) => s.updateTask);
+  const getTaskById = useProjectStore((s) => s.getTaskById);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState<'comments' | 'history'>('comments');
   const [commentText, setCommentText] = useState('');

@@ -2,13 +2,13 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { TaskDetail } from '@/components/tasks/TaskDetail';
 
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const task = useTaskStore((s) => s.getTaskById(params.id as string));
+  const task = useProjectStore((s) => s.getTaskById(params.id as string));
 
   if (!task) {
     return (

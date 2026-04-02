@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { X, Bug, BookOpen, CheckSquare, Layers } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
-import { useProjectStore } from '@/store/projectStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { TaskType, TaskStatus, TaskPriority } from '@/lib/types';
 
 interface TaskCreateModalProps {
@@ -19,10 +18,10 @@ const TYPE_OPTIONS: { value: TaskType; label: string; icon: React.ReactNode }[] 
 ];
 
 export function TaskCreateModal({ onClose }: TaskCreateModalProps) {
-  const addTask = useTaskStore((s) => s.addTask);
+  const addTask = useProjectStore((s) => s.addTask);
   const projects = useProjectStore((s) => s.projects);
-  const sprints = useTaskStore((s) => s.sprints);
-  const tasks = useTaskStore((s) => s.tasks);
+  const sprints = useProjectStore((s) => s.sprints);
+  const tasks = useProjectStore((s) => s.tasks);
 
   const [type, setType] = useState<TaskType>(TaskType.Task);
   const [title, setTitle] = useState('');

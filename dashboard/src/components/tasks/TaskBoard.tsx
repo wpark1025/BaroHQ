@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GripVertical, Bug, BookOpen, CheckSquare, Layers, AlertTriangle } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { TaskStatus, TaskType, TaskPriority } from '@/lib/types';
 
 const COLUMNS: { status: TaskStatus; label: string; dotColor: string }[] = [
@@ -32,8 +32,8 @@ const PRIORITY_BADGE: Record<string, string> = {
 
 export function TaskBoard() {
   const router = useRouter();
-  const filteredTasks = useTaskStore((s) => s.getFilteredTasks());
-  const updateTask = useTaskStore((s) => s.updateTask);
+  const filteredTasks = useProjectStore((s) => s.getFilteredTasks());
+  const updateTask = useProjectStore((s) => s.updateTask);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const handleDrop = (status: TaskStatus) => {

@@ -2,7 +2,7 @@
 
 import { Zap, Settings, FlaskConical, Power } from 'lucide-react';
 import { Provider, ProviderStatus, ProviderType } from '@/lib/types';
-import { useProviderStore } from '@/store/providerStore';
+import { useProviderStore } from '@/store/useProviderStore';
 
 const STATUS_DOT: Record<string, string> = {
   [ProviderStatus.Active]: 'bg-green-400',

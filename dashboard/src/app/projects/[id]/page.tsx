@@ -6,7 +6,7 @@ import {
   ArrowLeft, Calendar, User, Clock, GitBranch,
   LayoutDashboard, ListChecks, GanttChart, Users, DollarSign, Settings,
 } from 'lucide-react';
-import { useProjectStore } from '@/store/projectStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { ProjectDetail } from '@/components/projects/ProjectDetail';
 import { ProjectBoard } from '@/components/projects/ProjectBoard';
 import { ProjectTimeline } from '@/components/projects/ProjectTimeline';

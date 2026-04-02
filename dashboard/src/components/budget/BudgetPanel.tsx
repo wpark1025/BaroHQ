@@ -1,27 +1,13 @@
 'use client';
 
 import { DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useBudgetStore } from '@/store/budgetStore';
 
 interface BudgetEntry {
   name: string;
   spent: number;
   limit: number;
 }
-
-const DEMO_BUDGET = {
-  monthlyLimit: 5000,
-  spent: 2847,
-  byProvider: [
-    { name: 'Claude API', spent: 1420, limit: 2500 },
-    { name: 'OpenAI', spent: 890, limit: 1500 },
-    { name: 'Gemini', spent: 537, limit: 1000 },
-  ] as BudgetEntry[],
-  byTeam: [
-    { name: 'Engineering', spent: 1890, limit: 3000 },
-    { name: 'Design', spent: 620, limit: 1000 },
-    { name: 'Executive', spent: 337, limit: 1000 },
-  ] as BudgetEntry[],
-};
 
 function BudgetBar({ entry }: { entry: BudgetEntry }) {
   const pct = entry.limit > 0 ? (entry.spent / entry.limit) * 100 : 0;
@@ -45,7 +31,23 @@ function BudgetBar({ entry }: { entry: BudgetEntry }) {
 }
 
 export function BudgetPanel() {
-  const pct = (DEMO_BUDGET.spent / DEMO_BUDGET.monthlyLimit) * 100;
+  const budget = useBudgetStore((s) => s.budget);
+  const monthlyLimit = budget.monthlyLimit || 0;
+  const spent = budget.spent || 0;
+  const pct = monthlyLimit > 0 ? (spent / monthlyLimit) * 100 : 0;
+
+  if (monthlyLimit === 0 && spent === 0 && budget.byProvider.length === 0) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-lg font-semibold text-slate-200">Budget</h2>
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-8 text-center">
+          <DollarSign className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+          <p className="text-sm text-slate-400">No budget data yet.</p>
+          <p className="text-xs text-slate-600 mt-1">Budget tracking begins once agents start running tasks.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -59,7 +61,7 @@ export function BudgetPanel() {
             <span className="text-xs text-slate-500">Monthly Limit</span>
           </div>
           <p className="text-xl font-bold text-slate-100">
-            ${DEMO_BUDGET.monthlyLimit.toLocaleString()}
+            ${monthlyLimit.toLocaleString()}
           </p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -68,7 +70,7 @@ export function BudgetPanel() {
             <span className="text-xs text-slate-500">Spent This Month</span>
           </div>
           <p className="text-xl font-bold text-slate-100">
-            ${DEMO_BUDGET.spent.toLocaleString()}
+            ${spent.toLocaleString()}
           </p>
           <p className="text-xs text-slate-500">{pct.toFixed(0)}% used</p>
         </div>
@@ -78,7 +80,7 @@ export function BudgetPanel() {
             <span className="text-xs text-slate-500">Remaining</span>
           </div>
           <p className="text-xl font-bold text-slate-100">
-            ${(DEMO_BUDGET.monthlyLimit - DEMO_BUDGET.spent).toLocaleString()}
+            ${(monthlyLimit - spent).toLocaleString()}
           </p>
         </div>
       </div>
@@ -100,24 +102,28 @@ export function BudgetPanel() {
       </div>
 
       {/* By Provider */}
-      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <h3 className="text-sm font-bold text-slate-300 mb-3">By Provider</h3>
-        <div className="space-y-2.5">
-          {DEMO_BUDGET.byProvider.map((entry) => (
-            <BudgetBar key={entry.name} entry={entry} />
-          ))}
+      {budget.byProvider.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 className="text-sm font-bold text-slate-300 mb-3">By Provider</h3>
+          <div className="space-y-2.5">
+            {budget.byProvider.map((entry) => (
+              <BudgetBar key={entry.name} entry={entry} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* By Team */}
-      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-        <h3 className="text-sm font-bold text-slate-300 mb-3">By Team</h3>
-        <div className="space-y-2.5">
-          {DEMO_BUDGET.byTeam.map((entry) => (
-            <BudgetBar key={entry.name} entry={entry} />
-          ))}
+      {budget.byTeam.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 className="text-sm font-bold text-slate-300 mb-3">By Team</h3>
+          <div className="space-y-2.5">
+            {budget.byTeam.map((entry) => (
+              <BudgetBar key={entry.name} entry={entry} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

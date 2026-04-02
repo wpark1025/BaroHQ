@@ -1,26 +1,26 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { TaskType, TaskStatus, TaskPriority } from '@/lib/types';
 
 export function TaskFilters() {
   const {
     searchQuery, setSearchQuery,
     filterType, setFilterType,
-    filterStatus, setFilterStatus,
-    filterPriority, setFilterPriority,
+    filterTaskStatus, setFilterTaskStatus,
+    filterTaskPriority, setFilterTaskPriority,
     filterAssignee, setFilterAssignee,
     filterProject, setFilterProject,
     filterSprint, setFilterSprint,
     filterLabel, setFilterLabel,
     filterReporter, setFilterReporter,
-  } = useTaskStore();
+  } = useProjectStore();
 
   const hasFilters =
     filterType !== 'all' ||
-    filterStatus !== 'all' ||
-    filterPriority !== 'all' ||
+    filterTaskStatus !== 'all' ||
+    filterTaskPriority !== 'all' ||
     filterAssignee !== 'all' ||
     filterProject !== 'all' ||
     filterSprint !== 'all' ||
@@ -31,8 +31,8 @@ export function TaskFilters() {
   const clearAll = () => {
     setSearchQuery('');
     setFilterType('all');
-    setFilterStatus('all');
-    setFilterPriority('all');
+    setFilterTaskStatus('all');
+    setFilterTaskPriority('all');
     setFilterAssignee('all');
     setFilterProject('all');
     setFilterSprint('all');
@@ -77,8 +77,8 @@ export function TaskFilters() {
         </select>
 
         <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value as TaskStatus | 'all')}
+          value={filterTaskStatus}
+          onChange={(e) => setFilterTaskStatus(e.target.value as TaskStatus | 'all')}
           className="px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-300 focus:outline-none focus:border-blue-500"
         >
           <option value="all">All Statuses</option>
@@ -90,8 +90,8 @@ export function TaskFilters() {
         </select>
 
         <select
-          value={filterPriority}
-          onChange={(e) => setFilterPriority(e.target.value as TaskPriority | 'all')}
+          value={filterTaskPriority}
+          onChange={(e) => setFilterTaskPriority(e.target.value as TaskPriority | 'all')}
           className="px-2 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-300 focus:outline-none focus:border-blue-500"
         >
           <option value="all">All Priorities</option>

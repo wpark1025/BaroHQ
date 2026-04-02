@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Search, Wrench, Server } from 'lucide-react';
-import { useMcpStore } from '@/store/mcpStore';
+import { useMcpStore } from '@/store/useMcpStore';
 
 export function McpToolBrowser() {
   const allTools = useMcpStore((s) => s.getAllTools());

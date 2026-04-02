@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { GripVertical, Plus, Bug, BookOpen, CheckSquare, Layers, AlertTriangle } from 'lucide-react';
-import { useTaskStore } from '@/store/taskStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { TaskStatus, TaskType, TaskPriority } from '@/lib/types';
 
 const COLUMNS: { status: TaskStatus; label: string; color: string }[] = [
@@ -34,8 +34,8 @@ interface ProjectBoardProps {
 }
 
 export function ProjectBoard({ projectId }: ProjectBoardProps) {
-  const tasks = useTaskStore((s) => s.getTasksByProject(projectId));
-  const updateTask = useTaskStore((s) => s.updateTask);
+  const tasks = useProjectStore((s) => s.getTasksByProject(projectId));
+  const updateTask = useProjectStore((s) => s.updateTask);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const handleDragStart = (taskId: string) => {
