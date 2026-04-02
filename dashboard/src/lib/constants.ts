@@ -149,6 +149,7 @@ export interface ProviderPreset {
   configFields: { key: string; label: string; type: string; placeholder: string; required: boolean }[];
 }
 
+/** Onboarding presets — only the 3 local CLI providers shown during setup. */
 export const PROVIDER_PRESETS: ProviderPreset[] = [
   {
     type: ProviderType.ClaudeCode,
@@ -157,31 +158,52 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🤖',
     color: '#d97706',
     models: [
-      { tier: 'opus', name: 'claude-opus-4', inputCost: 15, outputCost: 75 },
-      { tier: 'sonnet', name: 'claude-sonnet-4', inputCost: 3, outputCost: 15 },
-      { tier: 'haiku', name: 'claude-haiku-3.5', inputCost: 0.25, outputCost: 1.25 },
+      { tier: 'opus', name: 'claude-opus-4-6', inputCost: 15, outputCost: 75 },
+      { tier: 'sonnet', name: 'claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
+      { tier: 'haiku', name: 'claude-haiku-4-5', inputCost: 1, outputCost: 5 },
     ],
     requiresApiKey: false,
     configFields: [
-      { key: 'binaryPath', label: 'Claude Binary Path', type: 'text', placeholder: '/usr/local/bin/claude', required: false },
+      { key: 'binaryPath', label: 'Claude Binary Path', type: 'text', placeholder: 'claude (default, uses PATH)', required: false },
+    ],
+  },
+  {
+    type: ProviderType.CodexCli,
+    name: 'Codex CLI',
+    description: 'OpenAI Codex via local CLI. Run `codex login` first.',
+    icon: '🔮',
+    color: '#10a37f',
+    models: [
+      { tier: 'opus', name: 'o3', inputCost: 10, outputCost: 40 },
+      { tier: 'sonnet', name: 'codex-mini', inputCost: 2.50, outputCost: 10 },
+      { tier: 'haiku', name: 'gpt-4.1-nano', inputCost: 0.50, outputCost: 2 },
+    ],
+    requiresApiKey: false,
+    configFields: [
+      { key: 'binaryPath', label: 'Codex Binary Path', type: 'text', placeholder: 'codex (default, uses PATH)', required: false },
     ],
   },
   {
     type: ProviderType.GeminiCli,
     name: 'Gemini CLI',
-    description: 'Google Gemini via Gemini CLI. Uses local gemini binary.',
+    description: 'Google Gemini via local CLI. Run `gemini login` first.',
     icon: '💎',
     color: '#4285f4',
     models: [
-      { tier: 'opus', name: 'gemini-2.5-pro', inputCost: 7, outputCost: 21 },
-      { tier: 'sonnet', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 0.6 },
-      { tier: 'haiku', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.3 },
+      { tier: 'opus', name: 'gemini-2.5-pro', inputCost: 1.25, outputCost: 10 },
+      { tier: 'sonnet', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 3.50 },
+      { tier: 'haiku', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.30 },
     ],
     requiresApiKey: false,
     configFields: [
-      { key: 'binaryPath', label: 'Gemini Binary Path', type: 'text', placeholder: '/usr/local/bin/gemini', required: false },
+      { key: 'binaryPath', label: 'Gemini Binary Path', type: 'text', placeholder: 'gemini (default, uses PATH)', required: false },
     ],
   },
+];
+
+/** All provider presets including API-based providers for future use. */
+export const ALL_PROVIDER_PRESETS: ProviderPreset[] = [
+  ...PROVIDER_PRESETS,
   {
     type: ProviderType.ClaudeAPI,
     name: 'Claude API',
@@ -189,9 +211,9 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🧠',
     color: '#d97706',
     models: [
-      { tier: 'opus', name: 'claude-opus-4', inputCost: 15, outputCost: 75 },
-      { tier: 'sonnet', name: 'claude-sonnet-4', inputCost: 3, outputCost: 15 },
-      { tier: 'haiku', name: 'claude-haiku-3.5', inputCost: 0.25, outputCost: 1.25 },
+      { tier: 'opus', name: 'claude-opus-4-6', inputCost: 15, outputCost: 75 },
+      { tier: 'sonnet', name: 'claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
+      { tier: 'haiku', name: 'claude-haiku-4-5', inputCost: 1, outputCost: 5 },
     ],
     requiresApiKey: true,
     configFields: [
@@ -206,9 +228,9 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '💎',
     color: '#4285f4',
     models: [
-      { tier: 'opus', name: 'gemini-2.5-pro', inputCost: 7, outputCost: 21 },
-      { tier: 'sonnet', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 0.6 },
-      { tier: 'haiku', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.3 },
+      { tier: 'opus', name: 'gemini-2.5-pro', inputCost: 1.25, outputCost: 10 },
+      { tier: 'sonnet', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 3.50 },
+      { tier: 'haiku', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.30 },
     ],
     requiresApiKey: true,
     configFields: [
@@ -239,9 +261,9 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🌐',
     color: '#6366f1',
     models: [
-      { tier: 'opus', name: 'anthropic/claude-opus-4', inputCost: 15, outputCost: 75 },
-      { tier: 'sonnet', name: 'anthropic/claude-sonnet-4', inputCost: 3, outputCost: 15 },
-      { tier: 'haiku', name: 'anthropic/claude-haiku-3.5', inputCost: 0.25, outputCost: 1.25 },
+      { tier: 'opus', name: 'anthropic/claude-opus-4-6', inputCost: 15, outputCost: 75 },
+      { tier: 'sonnet', name: 'anthropic/claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
+      { tier: 'haiku', name: 'anthropic/claude-haiku-4-5', inputCost: 1, outputCost: 5 },
     ],
     requiresApiKey: true,
     configFields: [

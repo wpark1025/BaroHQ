@@ -20,6 +20,7 @@ export default function ReviewLaunch() {
   } = useOnboardingStore();
 
   const [launching, setLaunching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const enabledExecs = executives.filter((e) => e.enabled);
 
@@ -86,12 +87,15 @@ export default function ReviewLaunch() {
 
   const handleLaunch = async () => {
     setLaunching(true);
+    setError(null);
     try {
       await finishOnboarding();
       // Short delay for dramatic effect
       await new Promise((resolve) => setTimeout(resolve, 1200));
       router.push('/office');
-    } catch {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to save configuration';
+      setError(message);
       setLaunching(false);
     }
   };
@@ -169,6 +173,13 @@ export default function ReviewLaunch() {
             </div>
           ))}
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg">
+            <p className="text-sm text-red-400">{error}</p>
+          </div>
+        )}
 
         {/* Launch Button */}
         <div className="mt-8 text-center">

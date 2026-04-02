@@ -6,7 +6,7 @@ import type { Agent } from '@/lib/types';
 import { useAgentStore } from '@/store/useAgentStore';
 import { useProviderStore } from '@/store/useProviderStore';
 import { useMcpStore } from '@/store/useMcpStore';
-import { PROVIDER_PRESETS } from '@/lib/constants';
+import { ALL_PROVIDER_PRESETS } from '@/lib/constants';
 
 interface AgentSettingsProps {
   agent: Agent;
@@ -27,7 +27,7 @@ export default function AgentSettings({ agent, onClose }: AgentSettingsProps) {
 
   const displayProviders = providers.length > 0
     ? providers.map((p) => ({ value: p.id, label: p.name }))
-    : PROVIDER_PRESETS.map((p) => ({ value: p.type, label: p.name }));
+    : ALL_PROVIDER_PRESETS.map((p) => ({ value: p.type, label: p.name }));
 
   const handleSave = () => {
     updateAgent(agent.id, {

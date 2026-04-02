@@ -196,10 +196,10 @@ export default function OfficeFloor() {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center space-y-2">
               <p className="text-sm text-slate-500 font-medium">
-                No agents yet.
+                No agents on this floor
               </p>
               <p className="text-xs text-slate-600">
-                Complete onboarding to get started.
+                Complete onboarding to see your team here
               </p>
             </div>
           </div>

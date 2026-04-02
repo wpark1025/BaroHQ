@@ -50,10 +50,66 @@ export default function ProviderSetup() {
     });
   };
 
-  const handleTestProvider = async (_type: string): Promise<boolean> => {
-    // Simulate a test delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    return Math.random() > 0.3;
+  const handleTestProvider = async (type: string): Promise<{ success: boolean; steps: { name: string; status: 'pass' | 'fail' | 'skip'; detail: string }[] }> => {
+    const steps: { name: string; status: 'pass' | 'fail' | 'skip'; detail: string }[] = [];
+
+    // Step 1: Check if CLI binary exists (for CLI-based providers)
+    if (['claude_code', 'codex-cli', 'gemini_cli'].includes(type)) {
+      const binaryName = type === 'claude_code' ? 'claude' : type === 'codex-cli' ? 'codex' : 'gemini';
+      const binaryPath = configs[type]?.binaryPath || binaryName;
+
+      steps.push({ name: `Checking ${binaryName} binary`, status: 'pass', detail: '' });
+
+      try {
+        // Try to reach the bridge to check binary
+        const resp = await fetch('http://localhost:3001/api/test-provider', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, config: configs[type] || {}, binaryPath }),
+        });
+
+        if (resp.ok) {
+          const result: { binaryFound: boolean; binaryPath: string; authenticated: boolean; modelAccess: boolean } = await resp.json();
+          steps[0].status = result.binaryFound ? 'pass' : 'fail';
+          steps[0].detail = result.binaryFound ? `Found at: ${result.binaryPath}` : `${binaryName} not found in PATH`;
+
+          // Step 2: Check auth
+          steps.push({
+            name: 'Checking authentication',
+            status: result.authenticated ? 'pass' : 'fail',
+            detail: result.authenticated ? 'Authenticated' : `Not logged in. Run: ${binaryName} login`,
+          });
+
+          // Step 3: Test model access
+          if (result.authenticated) {
+            steps.push({
+              name: 'Testing model access',
+              status: result.modelAccess ? 'pass' : 'fail',
+              detail: result.modelAccess ? 'Models accessible' : 'Could not access models',
+            });
+          }
+
+          return { success: result.binaryFound && result.authenticated, steps };
+        }
+      } catch {
+        // Bridge not running — test locally instead
+      }
+
+      // Fallback: bridge not reachable
+      steps[0].status = 'skip';
+      steps[0].detail = 'Cannot test from browser. Start the bridge first, or verify manually.';
+
+      steps.push({
+        name: 'Manual verification',
+        status: 'skip',
+        detail: `Open terminal and run: ${binaryPath} --version`,
+      });
+
+      return { success: false, steps };
+    }
+
+    // For API-based providers (future use)
+    return { success: false, steps: [{ name: 'Not implemented', status: 'skip', detail: 'API providers coming soon' }] };
   };
 
   const toggleMcpPreset = (presetId: string) => {

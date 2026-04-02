@@ -2,7 +2,7 @@
 
 import { ChevronDown } from 'lucide-react';
 import { useProviderStore } from '@/store/useProviderStore';
-import { PROVIDER_PRESETS } from '@/lib/constants';
+import { ALL_PROVIDER_PRESETS } from '@/lib/constants';
 
 interface AgentProviderSelectProps {
   providerId: string;
@@ -22,14 +22,14 @@ export default function AgentProviderSelect({
   const enabledProviders =
     providers.length > 0
       ? providers.filter((p) => p.enabled)
-      : PROVIDER_PRESETS.map((p) => ({
+      : ALL_PROVIDER_PRESETS.map((p) => ({
           id: p.type,
           name: p.name,
           type: p.type,
           models: p.models,
         }));
 
-  const selectedProvider = PROVIDER_PRESETS.find((p) => p.type === providerId);
+  const selectedProvider = ALL_PROVIDER_PRESETS.find((p) => p.type === providerId);
 
   const selectedModel = selectedProvider?.models.find(
     (m) => m.tier === modelTier

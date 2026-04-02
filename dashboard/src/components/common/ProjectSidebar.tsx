@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useAgentStore } from '@/store/useAgentStore';
+import { AddProjectModal } from '@/components/projects/AddProjectModal';
 
 interface ProjectSidebarProps {
   collapsed: boolean;
@@ -88,6 +89,7 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
   const router = useRouter();
   const { projects } = useProjectStore();
   const selectedTeam = useAgentStore((s) => s.selectedTeam);
+  const [showAddProject, setShowAddProject] = useState(false);
 
   // Filter projects by selected team if any
   const displayProjects = selectedTeam
@@ -101,6 +103,7 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
   }
 
   return (
+    <>
     <div className="w-[220px] bg-slate-950 border-r border-slate-800 flex flex-col shrink-0 overflow-y-auto panel-collapse">
       {/* Projects Section */}
       <div className="px-3 pt-3 pb-1 flex items-center justify-between">
@@ -109,6 +112,7 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
         </span>
         <button
           title="New Project"
+          onClick={() => setShowAddProject(true)}
           className="text-slate-600 hover:text-slate-400 transition-colors"
         >
           <Plus className="w-3 h-3" />
@@ -176,8 +180,8 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
         />
         <TreeNode
           icon={<Plug className="w-3.5 h-3.5 text-emerald-400" />}
-          label="MCP Connections"
-          onClick={() => router.push('/mcp')}
+          label="MCP Tools"
+          onClick={() => router.push('/settings')}
         />
         <TreeNode
           icon={<DollarSign className="w-3.5 h-3.5 text-green-400" />}
@@ -207,5 +211,10 @@ export default function ProjectSidebar({ collapsed }: ProjectSidebarProps) {
         </div>
       </div>
     </div>
+
+    {showAddProject && (
+      <AddProjectModal onClose={() => setShowAddProject(false)} />
+    )}
+    </>
   );
 }

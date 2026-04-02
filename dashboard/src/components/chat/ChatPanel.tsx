@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { MessageSquare, X, Wifi, WifiOff } from 'lucide-react';
+import { MessageSquare, X, WifiOff } from 'lucide-react';
 import ChannelSidebar from './ChannelSidebar';
 import ChannelView from './ChannelView';
 import DirectMessage from './DirectMessage';
 import { useChatStore } from '@/store/useChatStore';
 import { useAgentStore } from '@/store/useAgentStore';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import type { Channel } from '@/lib/types';
 
 export default function ChatPanel() {
   const channels = useChatStore((s) => s.channels);
   const agents = useAgentStore((s) => s.agents);
+  const { connected } = useWebSocket();
 
   // Build channels from store, or generate defaults from agents
   const displayChannels: Channel[] = useMemo(() => {
@@ -61,6 +63,16 @@ export default function ChatPanel() {
           )}
         </button>
       </div>
+
+      {/* Offline notice */}
+      {!connected && (
+        <div className="px-3 py-1.5 bg-amber-900/20 border-b border-amber-800/30 flex items-center gap-1.5">
+          <WifiOff className="w-3 h-3 text-amber-500 shrink-0" />
+          <span className="text-[9px] text-amber-400">
+            Bridge offline — messages stored locally
+          </span>
+        </div>
+      )}
 
       <div className="flex-1 flex overflow-hidden">
         {showChannelList && (

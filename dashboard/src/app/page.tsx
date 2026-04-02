@@ -1,21 +1,19 @@
 import { redirect } from 'next/navigation';
+import * as fs from 'fs';
+import * as path from 'path';
 
-async function getConfig() {
+function getConfigFromDisk(): { onboardingComplete?: boolean } | null {
   try {
-    const res = await fetch('http://localhost:3001/api/config', {
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      return await res.json();
-    }
+    const configPath = path.resolve(process.cwd(), '..', 'config.json');
+    const data = fs.readFileSync(configPath, 'utf-8');
+    return JSON.parse(data) as { onboardingComplete?: boolean };
   } catch {
-    // Bridge not available
+    return null;
   }
-  return null;
 }
 
-export default async function RootPage() {
-  const config = await getConfig();
+export default function RootPage() {
+  const config = getConfigFromDisk();
 
   if (config && config.onboardingComplete) {
     redirect('/office');

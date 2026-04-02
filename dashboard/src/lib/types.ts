@@ -77,6 +77,7 @@ export enum ApprovalStatus {
 export enum ProviderType {
   ClaudeCode = 'claude_code',
   ClaudeAPI = 'claude_api',
+  CodexCli = 'codex-cli',
   GeminiCli = 'gemini_cli',
   Gemini = 'gemini',
   OpenAI = 'openai',

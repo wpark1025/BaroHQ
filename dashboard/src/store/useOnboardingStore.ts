@@ -190,7 +190,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
         title: 'Chief Executive Officer',
         appearance: state.ceoConfig.appearance,
         isHuman: true,
-        mcpConnections: [],
+        mcpConnections: [] as string[],
         status: AgentStatus.Idle,
       },
       executives: state.executives
@@ -203,7 +203,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
           appearance: e.appearance,
           providerId: e.providerId,
           modelTier: e.modelTier,
-          mcpConnections: [],
+          mcpConnections: [] as string[],
           status: AgentStatus.Idle,
         })),
       team: state.firstTeam,
@@ -212,15 +212,17 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       governanceRules: state.governanceSetup.rules,
     };
 
-    try {
-      await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      });
-    } catch {
-      // Bridge may not be running yet; config saved locally
-      console.warn('Could not save config to bridge');
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(
+        (errBody as { error?: string }).error ?? `Server responded with ${res.status}`
+      );
     }
   },
 

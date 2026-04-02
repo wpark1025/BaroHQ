@@ -11,7 +11,7 @@
       "modelMapping": {
         "opus": "claude-opus-4-6",
         "sonnet": "claude-sonnet-4-6",
-        "haiku": "claude-haiku-4-5-20251001"
+        "haiku": "claude-haiku-4-5"
       },
       "pricing": {
         "opus": {
@@ -27,7 +27,7 @@
           "outputPer1M": 5
         }
       },
-      "lastHealthCheck": "2026-04-02T15:15:34.739Z",
+      "lastHealthCheck": "2026-04-02T15:38:23.872Z",
       "createdAt": null
     }
   ],

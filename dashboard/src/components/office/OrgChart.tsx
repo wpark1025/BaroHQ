@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useAgentStore } from '@/store/useAgentStore';
+import { useTeamStore } from '@/store/useTeamStore';
+import { useProviderStore } from '@/store/useProviderStore';
 import { AgentStatus } from '@/lib/types';
 import PixelCharacter from './PixelCharacter';
 import { DEFAULT_APPEARANCE } from '@/lib/constants';
@@ -119,73 +121,124 @@ function OrgNodeCard({
 }
 
 export default function OrgChart() {
-  const { agents } = useAgentStore();
+  const { agents, selectAgent } = useAgentStore();
+  const teams = useTeamStore((s) => s.teams);
+  const providers = useProviderStore((s) => s.providers);
   const [selectedNode, setSelectedNode] = useState<OrgNode | null>(null);
 
-  // Build org tree from agents or use demo data
+  const getProviderLabel = (providerId: string, modelTier: string): string => {
+    const prov = providers.find((p) => p.id === providerId);
+    const provName = prov?.name ?? providerId;
+    return modelTier ? `${provName} (${modelTier})` : provName;
+  };
+
+  // Build org tree from real data
+  const ceo = agents.find((a) => a.role === 'CEO');
+  const executives = agents.filter((a) =>
+    a.teamId === 'executive-office' && a.role !== 'CEO'
+  );
+  const nonExecAgents = agents.filter((a) =>
+    a.teamId !== 'executive-office'
+  );
+
+  // Group non-exec agents by team
+  const teamGroups = new Map<string, typeof agents>();
+  for (const agent of nonExecAgents) {
+    const key = agent.teamId || 'unassigned';
+    const group = teamGroups.get(key) ?? [];
+    group.push(agent);
+    teamGroups.set(key, group);
+  }
+
+  // Build children for each executive - match teams to execs loosely
+  const execNodes: OrgNode[] = executives.map((exec) => {
+    // Find teams that this executive might oversee
+    const teamChildren: OrgNode[] = [];
+
+    teamGroups.forEach((teamAgents, teamId) => {
+      if (teamAgents.length === 0) return;
+
+      // First agent in each team is the leader
+      const leader = teamAgents[0];
+      const members = teamAgents.slice(1);
+
+      teamChildren.push({
+        id: leader.id,
+        name: leader.name,
+        role: leader.role,
+        status: leader.status,
+        appearance: leader.appearance,
+        provider: getProviderLabel(leader.providerId, leader.modelTier),
+        children: members.map((m) => ({
+          id: m.id,
+          name: m.name,
+          role: m.role,
+          status: m.status,
+          appearance: m.appearance,
+          provider: getProviderLabel(m.providerId, m.modelTier),
+        })),
+      });
+    });
+
+    return {
+      id: exec.id,
+      name: exec.name,
+      role: exec.role,
+      status: exec.status,
+      appearance: exec.appearance,
+      provider: getProviderLabel(exec.providerId, exec.modelTier),
+      children: teamChildren,
+    };
+  });
+
+  // If there are no executives, attach team groups directly under CEO
+  const ceoChildren: OrgNode[] = execNodes.length > 0
+    ? execNodes
+    : Array.from(teamGroups.entries()).reduce<OrgNode[]>((acc, [, teamAgents]) => {
+        const leader = teamAgents[0];
+        if (!leader) return acc;
+        const members = teamAgents.slice(1);
+        acc.push({
+          id: leader.id,
+          name: leader.name,
+          role: leader.role,
+          status: leader.status,
+          appearance: leader.appearance,
+          provider: getProviderLabel(leader.providerId, leader.modelTier),
+          children: members.map((m) => ({
+            id: m.id,
+            name: m.name,
+            role: m.role,
+            status: m.status,
+            appearance: m.appearance,
+            provider: getProviderLabel(m.providerId, m.modelTier),
+          })),
+        });
+        return acc;
+      }, []);
+
+  // Distribute team groups among executives (round-robin if multiple)
+  // Already handled above — executives get all team children since we don't have explicit mapping
+
   const orgTree: OrgNode = {
-    id: 'ceo',
-    name: 'Alex Sterling',
+    id: ceo?.id ?? 'ceo',
+    name: ceo?.name ?? 'CEO',
     role: 'CEO',
-    status: AgentStatus.Idle,
-    appearance: { hair: '#2d1b00', shirt: '#1e293b', pants: '#1e293b', skin: '#fde8c9' },
-    provider: 'claude-opus',
-    currentTask: 'Strategic planning',
-    children: [
-      {
-        id: 'cto',
-        name: 'Morgan Chen',
-        role: 'CTO',
-        status: AgentStatus.Working,
-        appearance: { hair: '#4a3728', shirt: '#3b82f6', pants: '#334155', skin: '#d4a574' },
-        provider: 'claude-opus',
-        currentTask: 'Architecture review',
-        children: [
-          {
-            id: 'eng-lead',
-            name: 'Jordan Blake',
-            role: 'Eng Lead',
-            status: AgentStatus.Working,
-            appearance: { hair: '#c4a35a', shirt: '#22c55e', pants: '#1e3a5f', skin: '#f5d0a9' },
-            provider: 'claude-sonnet',
-            currentTask: 'Sprint planning',
-            children: agents
-              .filter((a) => a.teamId === 'eng' && a.role !== 'Team Lead')
-              .map((a) => ({
-                id: a.id,
-                name: a.name,
-                role: a.role,
-                status: a.status,
-                appearance: a.appearance,
-                provider: a.modelTier,
-              })),
-          },
-        ],
-      },
-      {
-        id: 'cdo',
-        name: 'Riley Kim',
-        role: 'CDO',
-        status: AgentStatus.Meeting,
-        appearance: { hair: '#d44', shirt: '#ec4899', pants: '#312e81', skin: '#fde8c9' },
-        provider: 'claude-sonnet',
-        currentTask: 'Design review',
-      },
-      {
-        id: 'cfo',
-        name: 'Taylor Hayes',
-        role: 'CFO',
-        status: AgentStatus.Idle,
-        appearance: { hair: '#333', shirt: '#6b7280', pants: '#1e293b', skin: '#c68642' },
-        provider: 'claude-haiku',
-      },
-    ],
+    status: ceo?.status ?? AgentStatus.Idle,
+    appearance: ceo?.appearance ?? DEFAULT_APPEARANCE,
+    provider: ceo ? getProviderLabel(ceo.providerId, ceo.modelTier) : undefined,
+    children: ceoChildren.length > 0 ? ceoChildren : undefined,
   };
 
   return (
     <div className="w-full overflow-auto">
       <div className="min-w-[600px] p-8 flex flex-col items-center">
-        <OrgNodeCard node={orgTree} onSelect={setSelectedNode} />
+        <OrgNodeCard node={orgTree} onSelect={(node) => {
+          setSelectedNode(node);
+          // Also select the agent in the store if it exists
+          const agent = agents.find((a) => a.id === node.id);
+          if (agent) selectAgent(agent);
+        }} />
       </div>
 
       {/* Detail Panel */}
