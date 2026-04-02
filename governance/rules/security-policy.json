@@ -1,0 +1,19 @@
+{
+  "id": "security-policy",
+  "name": "Security Policy",
+  "category": "security",
+  "status": "active",
+  "enforcer": "cto",
+  "enforcerName": "CTO",
+  "version": 1,
+  "content": "## Security Policy\n\n- No secrets in code\n- Env vars for keys\n- Input validation\n- Dependency audit\n- No eval()\n- Sanitize outputs\n- HTTPS for external APIs",
+  "contentFormat": "markdown",
+  "tags": ["security", "secrets", "validation"],
+  "scope": "all_teams",
+  "scopeTeams": [],
+  "enforcement": { "level": "required", "onViolation": "block_and_notify", "preCommitHook": true },
+  "history": [],
+  "createdBy": "system",
+  "createdAt": null,
+  "updatedAt": null
+}

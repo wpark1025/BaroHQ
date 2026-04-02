@@ -1,0 +1,18 @@
+{
+  "steps": [
+    { "step": 0, "desc": "Git init + .gitignore", "done": true },
+    { "step": 1, "desc": "Folder structure + NPM package scaffold", "done": true },
+    { "step": 2, "desc": "Code quality (eslint, prettier, husky)", "done": true },
+    { "step": 3, "desc": "Governance templates + MCP presets", "done": true },
+    { "step": 4, "desc": "CLI entry point + postinstall", "done": true },
+    { "step": 5, "desc": "Dashboard — onboarding wizard", "done": true },
+    { "step": 6, "desc": "Dashboard — main app (office, agents, teams, chat, header)", "done": true },
+    { "step": 7, "desc": "Dashboard — projects + tasks (JIRA-style)", "done": true },
+    { "step": 8, "desc": "Dashboard — providers, MCP, governance, goals, budget, audit, approvals", "done": true },
+    { "step": 9, "desc": "Bridge — all 23 modules", "done": true },
+    { "step": 10, "desc": "Team template + data/ scaffolding", "done": true },
+    { "step": 11, "desc": "config.json, ecosystem, scripts", "done": true },
+    { "step": 12, "desc": "Dependencies + build verified", "done": true }
+  ],
+  "lastCompleted": 12
+}

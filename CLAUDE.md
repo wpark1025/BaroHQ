@@ -1,0 +1,1 @@
+BaroHQ: AI company control plane. npm package. /dashboard=Next.js, /bridge=WS, /teams=agents, /projects=repos, /governance=rules, /data=audit+budgets+tasks+runs.

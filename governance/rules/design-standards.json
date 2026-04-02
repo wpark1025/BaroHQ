@@ -1,0 +1,19 @@
+{
+  "id": "design-standards",
+  "name": "Design Standards",
+  "category": "design",
+  "status": "active",
+  "enforcer": "cdo",
+  "enforcerName": "CDO",
+  "version": 1,
+  "content": "## Design Standards\n\n- shadcn/ui inspired components\n- Tailwind CSS only, no inline styles\n- Slate gray palette\n- One accent color per team\n- System font stack\n- 4px spacing grid\n- rounded-lg default",
+  "contentFormat": "markdown",
+  "tags": ["design", "ui", "tailwind"],
+  "scope": "all_teams",
+  "scopeTeams": [],
+  "enforcement": { "level": "recommended", "onViolation": "warn_and_log", "preCommitHook": false },
+  "history": [],
+  "createdBy": "system",
+  "createdAt": null,
+  "updatedAt": null
+}

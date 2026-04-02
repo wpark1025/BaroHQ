@@ -1,0 +1,28 @@
+{
+  "name": "barohq",
+  "version": "6.0.0",
+  "description": "Multi-agent orchestration control plane & AI company management platform",
+  "bin": { "barohq": "./cli.js" },
+  "keywords": ["ai", "agents", "orchestration", "llm", "multi-agent", "claude", "gemini", "openai"],
+  "license": "MIT",
+  "engines": { "node": ">=18.0.0" },
+  "scripts": {
+    "start": "node cli.js start",
+    "dev": "concurrently \"cd dashboard && npm run dev\" \"cd bridge && npm run dev\"",
+    "build": "cd dashboard && npm run build && cd ../bridge && npm run build",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "cd dashboard && npx tsc --noEmit && cd ../bridge && npx tsc --noEmit",
+    "prepare": "husky install",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3"
+  }
+}

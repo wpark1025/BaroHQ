@@ -1,0 +1,77 @@
+{
+  "platformName": "BaroHQ",
+  "version": "6.0.0",
+  "onboardingComplete": false,
+  "plan": "free",
+  "license": {
+    "key": null,
+    "tier": "free",
+    "expiresAt": null,
+    "maxAgents": 5,
+    "maxTeams": 2,
+    "maxProjects": 2,
+    "maxProviders": 1,
+    "maxMcpConnections": 2,
+    "maxGovernanceRules": 3,
+    "features": {
+      "sprints": false,
+      "autoIssue": false,
+      "advancedApprovals": false,
+      "apiAccess": false
+    }
+  },
+  "usageLimits": {
+    "sessionTokenLimit": 88000,
+    "weeklyHoursLimit": 40,
+    "sessionDurationHours": 5
+  },
+  "autoResume": { "enabled": true, "bufferMinutes": 2 },
+  "teamNumbering": {
+    "reserved": { "00": "Executive_Office", "99": "Archive" },
+    "nextAvailable": 1
+  },
+  "budgets": {
+    "enabled": true,
+    "companyMonthlyLimit": null,
+    "alertThresholds": [0.50, 0.75, 0.90],
+    "pauseOnExceed": false,
+    "overrideRequiresApproval": true
+  },
+  "providers": {
+    "defaultProvider": "claude-code",
+    "fallbackEnabled": true,
+    "fallbackOrder": ["claude-code"]
+  },
+  "approvals": {
+    "enabled": true,
+    "protectedActions": [
+      "delete_team", "retire_agent", "budget_override", "change_provider",
+      "archive_project", "modify_governance", "delete_project", "modify_provider_keys"
+    ],
+    "defaultApprover": "ceo",
+    "autoApproveTimeout": null
+  },
+  "tasks": {
+    "autoCreateIssues": true,
+    "autoIssueOnFailure": true,
+    "issuePrefix": "BHQ",
+    "sprintsEnabled": true,
+    "defaultSprintDurationDays": 14
+  },
+  "governance": {
+    "enabled": true,
+    "enforceOnCommit": true,
+    "versionHistory": true
+  },
+  "mcp": {
+    "enabled": true,
+    "healthCheckIntervalSeconds": 120,
+    "maxConnectionsPerAgent": 10,
+    "autoDiscoverTools": true
+  },
+  "audit": { "enabled": true, "retentionDays": 90, "rotateDaily": true },
+  "ceo": {
+    "name": "CEO",
+    "appearance": { "hair": "#1e293b", "shirt": "#1e40af", "pants": "#0f172a", "skin": "#d4a574" }
+  }
+}

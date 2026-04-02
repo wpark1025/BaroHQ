@@ -1,0 +1,3 @@
+@echo off
+echo Starting team agent session...
+claude --resume

@@ -1,0 +1,15 @@
+projects/*/
+!projects/.gitkeep
+node_modules/
+.next/
+dist/
+*.tmp
+.env
+*.key
+*.pem
+data/audit/*.jsonl
+data/runs/*.json
+data/budgets/snapshots/
+data/approvals/resolved/
+data/tasks/
+governance/history/

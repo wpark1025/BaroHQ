@@ -1,0 +1,1 @@
+{TeamName}. Director:{LeaderName}->CoS->CEO. Read team.json, state.json, goals/, tasks/. Post to #{channel}. Follow governance/rules/. Check library/.

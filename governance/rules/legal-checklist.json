@@ -1,0 +1,19 @@
+{
+  "id": "legal-checklist",
+  "name": "Legal Checklist",
+  "category": "legal",
+  "status": "active",
+  "enforcer": "clo",
+  "enforcerName": "CLO",
+  "version": 1,
+  "content": "## Legal Checklist\n\n- Allowed licenses: MIT, Apache-2.0, BSD, ISC\n- Blocked: GPL, AGPL, SSPL\n- No copyrighted assets without license\n- No API keys in source\n- No PII in logs",
+  "contentFormat": "markdown",
+  "tags": ["legal", "compliance", "license"],
+  "scope": "all_teams",
+  "scopeTeams": [],
+  "enforcement": { "level": "required", "onViolation": "block_and_notify", "preCommitHook": false },
+  "history": [],
+  "createdBy": "system",
+  "createdAt": null,
+  "updatedAt": null
+}

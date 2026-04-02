@@ -1,0 +1,19 @@
+{
+  "id": "coding-standards",
+  "name": "Coding Standards",
+  "category": "engineering",
+  "status": "active",
+  "enforcer": "cto",
+  "enforcerName": "CTO",
+  "version": 1,
+  "content": "## Coding Standards\n\n- TypeScript strict mode, no `any`\n- JSDoc on all public functions\n- Functions under 50 lines\n- Files under 300 lines\n- Early returns over nested conditionals\n- PascalCase for components\n- camelCase for hooks and utilities\n- UPPER_SNAKE_CASE for constants\n- Commit format: `type(scope): description`",
+  "contentFormat": "markdown",
+  "tags": ["code", "quality", "typescript"],
+  "scope": "all_teams",
+  "scopeTeams": [],
+  "enforcement": { "level": "required", "onViolation": "warn_and_log", "preCommitHook": true },
+  "history": [],
+  "createdBy": "system",
+  "createdAt": null,
+  "updatedAt": null
+}

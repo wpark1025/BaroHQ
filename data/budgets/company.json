@@ -1,0 +1,9 @@
+{
+  "monthlyLimit": null,
+  "currentMonth": null,
+  "spent": 0,
+  "byProvider": {},
+  "byTeam": {},
+  "byProject": {},
+  "alerts": []
+}

@@ -1,0 +1,12 @@
+{
+  "name": "",
+  "icon": "",
+  "accent": "#6366f1",
+  "description": "",
+  "floor": { "width": 800, "height": 500 },
+  "budget": { "monthly": null, "spent": 0 },
+  "projects": [],
+  "channels": [],
+  "createdAt": null,
+  "updatedAt": null
+}

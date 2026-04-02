@@ -1,0 +1,6 @@
+{
+  "channels": [
+    { "id": "general", "name": "general", "type": "channel", "members": [], "createdAt": null }
+  ],
+  "dms": []
+}
