@@ -158,9 +158,9 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🤖',
     color: '#d97706',
     models: [
-      { tier: 'opus', name: 'claude-opus-4-6', inputCost: 15, outputCost: 75 },
-      { tier: 'sonnet', name: 'claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
-      { tier: 'haiku', name: 'claude-haiku-4-5', inputCost: 1, outputCost: 5 },
+      { tier: 'high', name: 'claude-opus-4-6', inputCost: 15, outputCost: 75 },
+      { tier: 'mid', name: 'claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
+      { tier: 'low', name: 'claude-haiku-4-5', inputCost: 1, outputCost: 5 },
     ],
     requiresApiKey: false,
     configFields: [
@@ -174,9 +174,9 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🔮',
     color: '#10a37f',
     models: [
-      { tier: 'opus', name: 'o3', inputCost: 10, outputCost: 40 },
-      { tier: 'sonnet', name: 'codex-mini', inputCost: 2.50, outputCost: 10 },
-      { tier: 'haiku', name: 'gpt-4.1-nano', inputCost: 0.50, outputCost: 2 },
+      { tier: 'high', name: 'o3', inputCost: 10, outputCost: 40 },
+      { tier: 'mid', name: 'codex-mini', inputCost: 2.50, outputCost: 10 },
+      { tier: 'low', name: 'gpt-4.1-nano', inputCost: 0.50, outputCost: 2 },
     ],
     requiresApiKey: false,
     configFields: [
@@ -190,9 +190,9 @@ export const PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '💎',
     color: '#4285f4',
     models: [
-      { tier: 'opus', name: 'gemini-2.5-pro', inputCost: 1.25, outputCost: 10 },
-      { tier: 'sonnet', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 3.50 },
-      { tier: 'haiku', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.30 },
+      { tier: 'high', name: 'gemini-2.5-pro', inputCost: 1.25, outputCost: 10 },
+      { tier: 'mid', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 3.50 },
+      { tier: 'low', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.30 },
     ],
     requiresApiKey: false,
     configFields: [
@@ -211,9 +211,9 @@ export const ALL_PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🧠',
     color: '#d97706',
     models: [
-      { tier: 'opus', name: 'claude-opus-4-6', inputCost: 15, outputCost: 75 },
-      { tier: 'sonnet', name: 'claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
-      { tier: 'haiku', name: 'claude-haiku-4-5', inputCost: 1, outputCost: 5 },
+      { tier: 'high', name: 'claude-opus-4-6', inputCost: 15, outputCost: 75 },
+      { tier: 'mid', name: 'claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
+      { tier: 'low', name: 'claude-haiku-4-5', inputCost: 1, outputCost: 5 },
     ],
     requiresApiKey: true,
     configFields: [
@@ -228,9 +228,9 @@ export const ALL_PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '💎',
     color: '#4285f4',
     models: [
-      { tier: 'opus', name: 'gemini-2.5-pro', inputCost: 1.25, outputCost: 10 },
-      { tier: 'sonnet', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 3.50 },
-      { tier: 'haiku', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.30 },
+      { tier: 'high', name: 'gemini-2.5-pro', inputCost: 1.25, outputCost: 10 },
+      { tier: 'mid', name: 'gemini-2.5-flash', inputCost: 0.15, outputCost: 3.50 },
+      { tier: 'low', name: 'gemini-2.0-flash-lite', inputCost: 0.075, outputCost: 0.30 },
     ],
     requiresApiKey: true,
     configFields: [
@@ -244,9 +244,9 @@ export const ALL_PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🔮',
     color: '#10a37f',
     models: [
-      { tier: 'opus', name: 'o3', inputCost: 10, outputCost: 40 },
-      { tier: 'sonnet', name: 'gpt-4.1', inputCost: 2, outputCost: 8 },
-      { tier: 'haiku', name: 'gpt-4.1-mini', inputCost: 0.4, outputCost: 1.6 },
+      { tier: 'high', name: 'o3', inputCost: 10, outputCost: 40 },
+      { tier: 'mid', name: 'gpt-4.1', inputCost: 2, outputCost: 8 },
+      { tier: 'low', name: 'gpt-4.1-mini', inputCost: 0.4, outputCost: 1.6 },
     ],
     requiresApiKey: true,
     configFields: [
@@ -261,9 +261,9 @@ export const ALL_PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '🌐',
     color: '#6366f1',
     models: [
-      { tier: 'opus', name: 'anthropic/claude-opus-4-6', inputCost: 15, outputCost: 75 },
-      { tier: 'sonnet', name: 'anthropic/claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
-      { tier: 'haiku', name: 'anthropic/claude-haiku-4-5', inputCost: 1, outputCost: 5 },
+      { tier: 'high', name: 'anthropic/claude-opus-4-6', inputCost: 15, outputCost: 75 },
+      { tier: 'mid', name: 'anthropic/claude-sonnet-4-6', inputCost: 3, outputCost: 15 },
+      { tier: 'low', name: 'anthropic/claude-haiku-4-5', inputCost: 1, outputCost: 5 },
     ],
     requiresApiKey: true,
     configFields: [
@@ -277,9 +277,9 @@ export const ALL_PROVIDER_PRESETS: ProviderPreset[] = [
     icon: '⚙️',
     color: '#9ca3af',
     models: [
-      { tier: 'opus', name: 'custom-large', inputCost: 0, outputCost: 0 },
-      { tier: 'sonnet', name: 'custom-medium', inputCost: 0, outputCost: 0 },
-      { tier: 'haiku', name: 'custom-small', inputCost: 0, outputCost: 0 },
+      { tier: 'high', name: 'custom-large', inputCost: 0, outputCost: 0 },
+      { tier: 'mid', name: 'custom-medium', inputCost: 0, outputCost: 0 },
+      { tier: 'low', name: 'custom-small', inputCost: 0, outputCost: 0 },
     ],
     requiresApiKey: true,
     configFields: [
@@ -344,8 +344,8 @@ export const DEFAULT_FLOOR_LAYOUT: FurnitureItem[] = [
 export const ONBOARDING_STEPS = [
   { id: 1, title: 'Company', description: 'Set up your company' },
   { id: 2, title: 'CEO', description: 'Set up your profile' },
-  { id: 3, title: 'Executives', description: 'Hire C-suite agents' },
-  { id: 4, title: 'Providers', description: 'Configure AI providers' },
+  { id: 3, title: 'Providers', description: 'Configure AI providers' },
+  { id: 4, title: 'Executives', description: 'Hire C-suite agents' },
   { id: 5, title: 'First Team', description: 'Create your first team' },
   { id: 6, title: 'Governance', description: 'Set company rules' },
   { id: 7, title: 'Launch', description: 'Review & launch' },
@@ -356,12 +356,12 @@ export const ONBOARDING_STEPS = [
 // ============================================================
 
 export const EXECUTIVE_ROLES = [
-  { id: 'cos', role: 'Chief of Staff', abbrev: 'CoS', description: 'Coordinates executive operations and manages priorities.', defaultModel: 'sonnet' },
-  { id: 'cto', role: 'Chief Technology Officer', abbrev: 'CTO', description: 'Oversees technical architecture and engineering standards.', defaultModel: 'opus' },
-  { id: 'cdo', role: 'Chief Design Officer', abbrev: 'CDO', description: 'Leads design strategy, UX, and brand standards.', defaultModel: 'sonnet' },
-  { id: 'cfo', role: 'Chief Financial Officer', abbrev: 'CFO', description: 'Manages budget allocation, cost optimization, and financial reporting.', defaultModel: 'haiku' },
-  { id: 'clo', role: 'Chief Legal Officer', abbrev: 'CLO', description: 'Handles legal compliance, licensing, and policy review.', defaultModel: 'sonnet' },
-  { id: 'coo', role: 'Chief Operating Officer', abbrev: 'COO', description: 'Manages day-to-day operations, team coordination, and process.', defaultModel: 'sonnet' },
+  { id: 'cos', role: 'Chief of Staff', abbrev: 'CoS', description: 'Coordinates executive operations and manages priorities.', defaultModel: 'mid' },
+  { id: 'cto', role: 'Chief Technology Officer', abbrev: 'CTO', description: 'Oversees technical architecture and engineering standards.', defaultModel: 'high' },
+  { id: 'cdo', role: 'Chief Design Officer', abbrev: 'CDO', description: 'Leads design strategy, UX, and brand standards.', defaultModel: 'mid' },
+  { id: 'cfo', role: 'Chief Financial Officer', abbrev: 'CFO', description: 'Manages budget allocation, cost optimization, and financial reporting.', defaultModel: 'low' },
+  { id: 'clo', role: 'Chief Legal Officer', abbrev: 'CLO', description: 'Handles legal compliance, licensing, and policy review.', defaultModel: 'mid' },
+  { id: 'coo', role: 'Chief Operating Officer', abbrev: 'COO', description: 'Manages day-to-day operations, team coordination, and process.', defaultModel: 'mid' },
 ] as const;
 
 // ============================================================

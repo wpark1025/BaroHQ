@@ -112,22 +112,26 @@ export default function AgentSettings({ agent, onClose }: AgentSettingsProps) {
             Model Tier
           </label>
           <div className="flex gap-2">
-            {['opus', 'sonnet', 'haiku'].map((tier) => (
-              <button
-                key={tier}
-                onClick={() => setModelTier(tier)}
-                className={`
-                  px-3 py-1.5 rounded text-xs font-medium transition-colors
-                  ${
-                    modelTier === tier
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  }
-                `}
-              >
-                {tier}
-              </button>
-            ))}
+            {(() => {
+              const preset = ALL_PROVIDER_PRESETS.find((p) => p.type === providerId);
+              const tiers = preset?.models || [{ tier: 'high', name: 'High' }, { tier: 'mid', name: 'Mid' }, { tier: 'low', name: 'Low' }];
+              return tiers.map((m) => (
+                <button
+                  key={m.tier}
+                  onClick={() => setModelTier(m.tier)}
+                  className={`
+                    px-3 py-1.5 rounded text-xs font-medium transition-colors
+                    ${
+                      modelTier === m.tier
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                    }
+                  `}
+                >
+                  {m.name}
+                </button>
+              ));
+            })()}
           </div>
         </div>
 

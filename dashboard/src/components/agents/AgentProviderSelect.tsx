@@ -68,24 +68,24 @@ export default function AgentProviderSelect({
             Model Tier
           </label>
           <div className="flex gap-1.5">
-            {['opus', 'sonnet', 'haiku'].map((tier) => (
+            {(selectedProvider?.models || [{ tier: 'high', name: 'High' }, { tier: 'mid', name: 'Mid' }, { tier: 'low', name: 'Low' }]).map((m) => (
               <button
-                key={tier}
-                onClick={() => onModelTierChange(tier)}
+                key={m.tier}
+                onClick={() => onModelTierChange(m.tier)}
                 className={`
                   flex-1 px-2 py-2 rounded text-xs font-medium transition-colors text-center
                   ${
-                    modelTier === tier
-                      ? tier === 'opus'
+                    modelTier === m.tier
+                      ? m.tier === 'high'
                         ? 'bg-amber-600 text-white'
-                        : tier === 'sonnet'
+                        : m.tier === 'mid'
                         ? 'bg-blue-600 text-white'
                         : 'bg-emerald-600 text-white'
                       : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700'
                   }
                 `}
               >
-                {tier}
+                {selectedProvider ? m.name : m.tier}
               </button>
             ))}
           </div>

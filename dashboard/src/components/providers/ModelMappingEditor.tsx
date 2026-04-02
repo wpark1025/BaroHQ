@@ -11,7 +11,7 @@ const MODEL_OPTIONS: Record<string, string[]> = {
   [ProviderType.Custom]: [],
 };
 
-const TIERS = ['opus', 'sonnet', 'haiku'] as const;
+const TIERS = ['high', 'mid', 'low'] as const;
 
 interface ModelMappingEditorProps {
   mapping: Record<string, string>;

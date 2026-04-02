@@ -61,11 +61,11 @@ export default function ProviderSetup() {
       steps.push({ name: `Checking ${binaryName} binary`, status: 'pass', detail: '' });
 
       try {
-        // Try to reach the bridge to check binary
-        const resp = await fetch('http://localhost:3001/api/test-provider', {
+        // Test via Next.js API route (works without bridge)
+        const resp = await fetch('/api/test-provider', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, config: configs[type] || {}, binaryPath }),
+          body: JSON.stringify({ type, binaryPath }),
         });
 
         if (resp.ok) {
@@ -95,15 +95,9 @@ export default function ProviderSetup() {
         // Bridge not running — test locally instead
       }
 
-      // Fallback: bridge not reachable
-      steps[0].status = 'skip';
-      steps[0].detail = 'Cannot test from browser. Start the bridge first, or verify manually.';
-
-      steps.push({
-        name: 'Manual verification',
-        status: 'skip',
-        detail: `Open terminal and run: ${binaryPath} --version`,
-      });
+      // Fallback: API route failed
+      steps[0].status = 'fail';
+      steps[0].detail = `Could not reach test endpoint. Verify manually: ${binaryPath} --version`;
 
       return { success: false, steps };
     }

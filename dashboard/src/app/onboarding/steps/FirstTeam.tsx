@@ -93,15 +93,11 @@ function ProviderModelSelector({
           {providerModels ? (
             providerModels.map((m) => (
               <option key={m.tier} value={m.tier}>
-                {m.tier.charAt(0).toUpperCase() + m.tier.slice(1)} — {m.name}
+                {m.name}
               </option>
             ))
           ) : (
-            <>
-              <option value="opus">Opus (High)</option>
-              <option value="sonnet">Sonnet (Mid)</option>
-              <option value="haiku">Haiku (Low)</option>
-            </>
+            <option value="">Select provider first</option>
           )}
         </select>
         <ChevronDown className="w-3 h-3 text-slate-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />

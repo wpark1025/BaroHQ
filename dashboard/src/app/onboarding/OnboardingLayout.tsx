@@ -51,9 +51,9 @@ export default function OnboardingLayout() {
       case 2:
         return <CeoSetup />;
       case 3:
-        return <ExecutiveHiring />;
-      case 4:
         return <ProviderSetup />;
+      case 4:
+        return <ExecutiveHiring />;
       case 5:
         return <FirstTeam />;
       case 6:
