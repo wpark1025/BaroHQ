@@ -105,38 +105,28 @@ async function main(): Promise<void> {
   // 5. Set up file watcher callback
   watcher.setCallback(async (eventType: string, filePath: string) => {
     const category = FileWatcher.categorize(filePath);
-    const teamDir = FileWatcher.extractTeamDir(filePath);
 
     console.log(`[watcher] ${eventType} ${category}: ${filePath}`);
 
     try {
       switch (category) {
-        case 'agent_config':
-          if (teamDir) await configManager.reloadTeam(teamDir);
-          break;
-        case 'team':
-          // Team.json changed - broadcast updated team data
-          if (teamDir) {
-            const team = await teamManager.getTeam(teamDir);
-            if (team) broadcast('team_created', { teamDir, team });
+        case 'teams':
+          // data/teams.json changed - reload all team configs and broadcast
+          await configManager.loadAll();
+          {
+            const teams = await teamManager.listTeams();
+            broadcast('team_created', { teams });
           }
-          break;
-        case 'team_state':
-          // Agent state changed (status/position)
-          if (teamDir) await configManager.reloadTeam(teamDir);
           break;
         case 'channel':
-          // Message file changed
-          if (teamDir) {
-            const channels = await channelManager.listChannels(teamDir);
-            broadcast('channel_updated', { teamDir, channels });
-          }
+          // channels.json or message file changed
+          broadcast('channel_updated', { reloaded: true });
           break;
         case 'goal':
-          // Goal file changed
-          if (teamDir) {
-            const goals = await goalManager.listGoals(teamDir);
-            broadcast('goal_updated', { teamDir, goals });
+          // goals.json changed
+          {
+            const goals = await goalManager.listAllGoals();
+            broadcast('goal_updated', { goals });
           }
           break;
         case 'governance':

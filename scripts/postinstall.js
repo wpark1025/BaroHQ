@@ -7,14 +7,26 @@ const root = path.resolve(__dirname, '..');
 const dirs = [
   'data/audit', 'data/runs', 'data/budgets/snapshots', 'data/approvals/pending',
   'data/approvals/resolved', 'data/providers', 'data/mcp', 'data/projects',
-  'data/tasks', 'data/company', 'teams/_template/goals', 'teams/_template/tasks',
-  'teams/_template/messages/history', 'teams/99_Archive', 'projects',
+  'data/tasks', 'data/company', 'data/messages', 'projects',
   'library/characters', 'library/research', 'library/assets', 'library/audio', 'library/data',
   'governance/rules/custom', 'governance/templates', 'governance/history',
 ];
 
 for (const d of dirs) {
   fs.mkdirSync(path.join(root, d), { recursive: true });
+}
+
+// Ensure flat data files exist
+const flatFiles = [
+  { path: 'data/teams.json', default: '[]' },
+  { path: 'data/goals.json', default: '[]' },
+  { path: 'data/channels.json', default: '[]' },
+];
+for (const f of flatFiles) {
+  const fp = path.join(root, f.path);
+  if (!fs.existsSync(fp)) {
+    fs.writeFileSync(fp, f.default);
+  }
 }
 
 const configPath = path.join(root, 'config.json');

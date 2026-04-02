@@ -1,28 +1,35 @@
-import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 import {
   Team,
-  PlatformConfig,
   Manager,
 } from './types';
 import {
-  getTeamsDir,
-  getConfigPath,
+  getTeamsFile,
   readJson,
   writeJsonAtomic,
-  listDirs,
-  copyDir,
-  moveDir,
-  exists,
 } from './persistence';
 import { BroadcastFn } from './auditLogger';
 
+interface TeamEntry {
+  id: string;
+  name: string;
+  icon: string;
+  accent: string;
+  description: string;
+  floor: number | { width: number; height: number };
+  budget: number | { monthly: number | null; spent: number };
+  projects: string[];
+  channels: string[];
+  agents: Record<string, unknown>[];
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export class TeamManager implements Manager {
-  private teamsDir: string;
+  private teamsFile: string;
   private broadcast: BroadcastFn | null = null;
 
   constructor() {
-    this.teamsDir = getTeamsDir();
+    this.teamsFile = getTeamsFile();
   }
 
   setBroadcast(fn: BroadcastFn): void {
@@ -33,38 +40,39 @@ export class TeamManager implements Manager {
     console.log('[teams] Team manager initialized.');
   }
 
+  private async readTeams(): Promise<TeamEntry[]> {
+    return readJson<TeamEntry[]>(this.teamsFile, []);
+  }
+
+  private async writeTeams(teams: TeamEntry[]): Promise<void> {
+    await writeJsonAtomic(this.teamsFile, teams);
+  }
+
+  private toTeam(entry: TeamEntry): Team {
+    const { agents, ...rest } = entry;
+    return { ...rest, agents: (agents || []).map((a) => (a as { id: string }).id || '') } as Team;
+  }
+
   /**
-   * List all teams (excluding _template and 99_Archive).
+   * List all teams.
    */
   async listTeams(): Promise<Team[]> {
-    const dirs = await listDirs(this.teamsDir);
-    const teams: Team[] = [];
-
-    for (const dir of dirs) {
-      if (dir === '_template' || dir === '99_Archive') continue;
-      const teamPath = path.join(this.teamsDir, dir, 'team.json');
-      const team = await readJson<Team>(teamPath, null as unknown as Team);
-      if (team) {
-        if (!team.id) team.id = dir;
-        teams.push(team);
-      }
-    }
-
-    return teams;
+    const teams = await this.readTeams();
+    return teams.map((t) => this.toTeam(t));
   }
 
   /**
-   * Get a single team by directory name.
+   * Get a single team by id.
    */
-  async getTeam(teamDir: string): Promise<Team | null> {
-    const teamPath = path.join(this.teamsDir, teamDir, 'team.json');
-    const team = await readJson<Team>(teamPath, null as unknown as Team);
-    if (team && !team.id) team.id = teamDir;
-    return team;
+  async getTeam(teamId: string): Promise<Team | null> {
+    const teams = await this.readTeams();
+    const entry = teams.find((t) => t.id === teamId);
+    if (!entry) return null;
+    return this.toTeam(entry);
   }
 
   /**
-   * Create a new team from the _template directory.
+   * Create a new team.
    */
   async createTeam(data: {
     name: string;
@@ -72,23 +80,17 @@ export class TeamManager implements Manager {
     accent?: string;
     description?: string;
   }): Promise<{ teamDir: string; team: Team }> {
-    // Read config for next available number
-    const config = await readJson<PlatformConfig>(getConfigPath(), {} as PlatformConfig);
-    const nextNum = config.teamNumbering?.nextAvailable || 1;
-    const paddedNum = String(nextNum).padStart(2, '0');
-    const dirName = `${paddedNum}_${data.name.replace(/\s+/g, '_')}`;
-    const teamDir = path.join(this.teamsDir, dirName);
-
-    // Copy template
-    const templateDir = path.join(this.teamsDir, '_template');
-    if (await exists(templateDir)) {
-      await copyDir(templateDir, teamDir);
-    }
-
-    // Write team.json
+    const teams = await this.readTeams();
     const now = new Date().toISOString();
-    const team: Team = {
-      id: dirName,
+
+    // Generate id from slugified name
+    const id = data.name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+
+    const entry: TeamEntry = {
+      id,
       name: data.name,
       icon: data.icon || '',
       accent: data.accent || '#6366f1',
@@ -102,81 +104,57 @@ export class TeamManager implements Manager {
       updatedAt: now,
     };
 
-    await writeJsonAtomic(path.join(teamDir, 'team.json'), team);
+    teams.push(entry);
+    await this.writeTeams(teams);
 
-    // Update config with next available number
-    if (config.teamNumbering) {
-      config.teamNumbering.nextAvailable = nextNum + 1;
-      await writeJsonAtomic(getConfigPath(), config);
-    }
+    const team = this.toTeam(entry);
 
     if (this.broadcast) {
-      this.broadcast('team_created', { teamDir: dirName, team });
+      this.broadcast('team_created', { teamDir: id, team });
     }
 
-    console.log(`[teams] Created team: ${dirName}`);
-    return { teamDir: dirName, team };
+    console.log(`[teams] Created team: ${id}`);
+    return { teamDir: id, team };
   }
 
   /**
-   * Archive a team by moving it to 99_Archive/.
+   * Archive a team by removing it from the array.
    */
-  async archiveTeam(teamDir: string): Promise<boolean> {
-    const srcPath = path.join(this.teamsDir, teamDir);
-    if (!(await exists(srcPath))) return false;
+  async archiveTeam(teamId: string): Promise<boolean> {
+    const teams = await this.readTeams();
+    const idx = teams.findIndex((t) => t.id === teamId);
+    if (idx === -1) return false;
 
-    const archiveDir = path.join(this.teamsDir, '99_Archive');
-    const destPath = path.join(archiveDir, teamDir);
-    await moveDir(srcPath, destPath);
+    teams.splice(idx, 1);
+    await this.writeTeams(teams);
 
     if (this.broadcast) {
-      this.broadcast('team_archived', { teamDir });
+      this.broadcast('team_archived', { teamDir: teamId });
     }
 
-    console.log(`[teams] Archived team: ${teamDir}`);
+    console.log(`[teams] Archived team: ${teamId}`);
     return true;
   }
 
   /**
-   * Rename a team (updates team.json and renames directory).
+   * Rename a team (updates name in the array).
    */
-  async renameTeam(teamDir: string, newName: string): Promise<Team | null> {
-    const teamPath = path.join(this.teamsDir, teamDir, 'team.json');
-    const team = await readJson<Team>(teamPath, null as unknown as Team);
-    if (!team) return null;
+  async renameTeam(teamId: string, newName: string): Promise<Team | null> {
+    const teams = await this.readTeams();
+    const entry = teams.find((t) => t.id === teamId);
+    if (!entry) return null;
 
-    const oldName = team.name;
-    team.name = newName;
-    team.updatedAt = new Date().toISOString();
-    await writeJsonAtomic(teamPath, team);
+    const oldName = entry.name;
+    entry.name = newName;
+    entry.updatedAt = new Date().toISOString();
+    await this.writeTeams(teams);
 
-    // Rename directory: extract number prefix
-    const match = teamDir.match(/^(\d+)_/);
-    if (match) {
-      const newDirName = `${match[1]}_${newName.replace(/\s+/g, '_')}`;
-      if (newDirName !== teamDir) {
-        const srcPath = path.join(this.teamsDir, teamDir);
-        const destPath = path.join(this.teamsDir, newDirName);
-        await moveDir(srcPath, destPath);
-        team.id = newDirName;
-
-        if (this.broadcast) {
-          this.broadcast('team_renamed', {
-            oldDir: teamDir,
-            newDir: newDirName,
-            oldName,
-            newName,
-            team,
-          });
-        }
-        return team;
-      }
-    }
+    const team = this.toTeam(entry);
 
     if (this.broadcast) {
       this.broadcast('team_renamed', {
-        oldDir: teamDir,
-        newDir: teamDir,
+        oldDir: teamId,
+        newDir: teamId,
         oldName,
         newName,
         team,
@@ -187,20 +165,21 @@ export class TeamManager implements Manager {
   }
 
   /**
-   * Delete a team permanently. Should require approval first.
+   * Delete a team permanently.
    */
-  async deleteTeam(teamDir: string): Promise<boolean> {
-    const teamPath = path.join(this.teamsDir, teamDir);
-    if (!(await exists(teamPath))) return false;
+  async deleteTeam(teamId: string): Promise<boolean> {
+    const teams = await this.readTeams();
+    const idx = teams.findIndex((t) => t.id === teamId);
+    if (idx === -1) return false;
 
-    const fsp = await import('fs/promises');
-    await fsp.rm(teamPath, { recursive: true, force: true });
+    teams.splice(idx, 1);
+    await this.writeTeams(teams);
 
     if (this.broadcast) {
-      this.broadcast('team_deleted', { teamDir });
+      this.broadcast('team_deleted', { teamDir: teamId });
     }
 
-    console.log(`[teams] Deleted team: ${teamDir}`);
+    console.log(`[teams] Deleted team: ${teamId}`);
     return true;
   }
 

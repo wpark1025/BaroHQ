@@ -5,19 +5,15 @@ import {
   AgentConfig,
   AgentStatus,
   PlatformConfig,
-  Provider,
-  McpConnection,
   Manager,
 } from './types';
 import {
   getDataDir,
-  getTeamsDir,
+  getTeamsFile,
+  getChannelsFile,
   getConfigPath,
   readJson,
   writeJsonAtomic,
-  ensureDir,
-  copyDir,
-  exists,
 } from './persistence';
 import { BroadcastFn } from './auditLogger';
 
@@ -154,40 +150,7 @@ export class OnboardingManager implements Manager {
     const now = new Date().toISOString();
     const config = await readJson<PlatformConfig>(getConfigPath(), {} as PlatformConfig);
 
-    // 1. Create 00_Executive_Office team
-    const teamsDir = getTeamsDir();
-    const execDir = path.join(teamsDir, '00_Executive_Office');
-
-    if (!(await exists(execDir))) {
-      const templateDir = path.join(teamsDir, '_template');
-      if (await exists(templateDir)) {
-        await copyDir(templateDir, execDir);
-      } else {
-        await ensureDir(execDir);
-        await ensureDir(path.join(execDir, 'messages'));
-        await ensureDir(path.join(execDir, 'goals'));
-        await ensureDir(path.join(execDir, 'tasks'));
-      }
-    }
-
-    // Write team.json for Executive Office
-    const execTeam = {
-      id: '00_Executive_Office',
-      name: 'Executive Office',
-      icon: 'crown',
-      accent: '#f59e0b',
-      description: 'C-suite executives and company leadership',
-      floor: { width: 800, height: 500 },
-      budget: { monthly: null, spent: 0 },
-      projects: [],
-      channels: [],
-      agents: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-    await writeJsonAtomic(path.join(execDir, 'team.json'), execTeam);
-
-    // 2. Add selected executives to team-config.json
+    // 1. Build executive agents list
     const executives: AgentConfig[] = [];
 
     // Always add CEO
@@ -231,9 +194,60 @@ export class OnboardingManager implements Manager {
       }
     }
 
-    await writeJsonAtomic(path.join(execDir, 'team-config.json'), { agents: executives });
+    // 2. Write Executive Office team to data/teams.json
+    const teamsFile = getTeamsFile();
+    const teams = await readJson<unknown[]>(teamsFile, []);
 
-    // 3. Activate selected governance rules
+    const execTeam = {
+      id: 'executive-office',
+      name: 'Executive Office',
+      icon: 'crown',
+      accent: '#f59e0b',
+      description: 'C-suite executives and company leadership',
+      floor: { width: 800, height: 500 },
+      budget: { monthly: null, spent: 0 },
+      projects: [],
+      channels: ['general'],
+      agents: executives.map((e) => ({
+        id: e.id,
+        name: e.name,
+        role: e.role,
+        status: e.status,
+        appearance: e.appearance,
+        providerId: e.providerId,
+        modelTier: e.modelTier,
+        mcpConnections: e.mcpConnections,
+      })),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // Replace existing or append
+    const existingIdx = teams.findIndex((t: unknown) => (t as { id: string }).id === 'executive-office');
+    if (existingIdx >= 0) {
+      teams[existingIdx] = execTeam;
+    } else {
+      teams.push(execTeam);
+    }
+    await writeJsonAtomic(teamsFile, teams);
+
+    // 3. Create default general channel in data/channels.json
+    const channelsFile = getChannelsFile();
+    const channels = await readJson<unknown[]>(channelsFile, []);
+    const hasGeneral = channels.some((c: unknown) => (c as { id: string }).id === 'general' && (c as { teamId: string }).teamId === 'executive-office');
+    if (!hasGeneral) {
+      channels.push({
+        id: 'general',
+        name: 'general',
+        type: 'team',
+        members: executives.map((e) => e.id),
+        teamId: 'executive-office',
+        unread: 0,
+      });
+      await writeJsonAtomic(channelsFile, channels);
+    }
+
+    // 4. Activate selected governance rules
     if (params.governanceRuleIds && params.governanceRuleIds.length > 0) {
       const govDir = path.join(getDataDir(), '..', 'governance', 'rules');
       for (const ruleId of params.governanceRuleIds) {
@@ -247,14 +261,11 @@ export class OnboardingManager implements Manager {
       }
     }
 
-    // 4. Update config: mark onboarding complete
+    // 5. Update config: mark onboarding complete
     config.onboardingComplete = true;
-    if (config.teamNumbering) {
-      config.teamNumbering.reserved['00'] = 'Executive_Office';
-    }
     await writeJsonAtomic(getConfigPath(), config);
 
-    // 5. Update onboarding state
+    // 6. Update onboarding state
     const state = await this.getState();
     state.completedAt = now;
     await writeJsonAtomic(this.onboardingPath, state);

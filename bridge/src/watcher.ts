@@ -23,11 +23,10 @@ export class FileWatcher implements Manager {
 
   async init(): Promise<void> {
     const watchPaths = [
-      path.join(this.rootDir, 'teams', '*', 'team.json'),
-      path.join(this.rootDir, 'teams', '*', 'team-config.json'),
-      path.join(this.rootDir, 'teams', '*', 'state.json'),
-      path.join(this.rootDir, 'teams', '*', 'messages', '**'),
-      path.join(this.rootDir, 'teams', '*', 'goals', '**'),
+      path.join(this.rootDir, 'data', 'teams.json'),
+      path.join(this.rootDir, 'data', 'goals.json'),
+      path.join(this.rootDir, 'data', 'channels.json'),
+      path.join(this.rootDir, 'data', 'messages', '**'),
       path.join(this.rootDir, 'governance', 'rules', '**'),
       path.join(this.rootDir, 'data', 'projects', '*'),
       path.join(this.rootDir, 'data', 'tasks', '*'),
@@ -84,23 +83,20 @@ export class FileWatcher implements Manager {
   static categorize(filePath: string): string {
     const normalized = filePath.replace(/\\/g, '/');
 
-    if (normalized.endsWith('config.json') && !normalized.includes('teams/')) {
+    if (normalized.endsWith('config.json') && !normalized.includes('/data/')) {
       return 'config';
     }
-    if (normalized.includes('/teams/') && normalized.includes('/team-config.json')) {
-      return 'agent_config';
+    if (normalized.includes('/data/teams.json')) {
+      return 'teams';
     }
-    if (normalized.includes('/teams/') && normalized.includes('/team.json')) {
-      return 'team';
+    if (normalized.includes('/data/goals.json')) {
+      return 'goal';
     }
-    if (normalized.includes('/teams/') && normalized.includes('/state.json')) {
-      return 'team_state';
-    }
-    if (normalized.includes('/teams/') && normalized.includes('/messages/')) {
+    if (normalized.includes('/data/channels.json')) {
       return 'channel';
     }
-    if (normalized.includes('/teams/') && normalized.includes('/goals/')) {
-      return 'goal';
+    if (normalized.includes('/data/messages/')) {
+      return 'channel';
     }
     if (normalized.includes('/governance/rules/')) {
       return 'governance';
@@ -121,15 +117,6 @@ export class FileWatcher implements Manager {
       return 'mcp';
     }
     return 'unknown';
-  }
-
-  /**
-   * Extract team directory name from a file path inside teams/.
-   */
-  static extractTeamDir(filePath: string): string | null {
-    const normalized = filePath.replace(/\\/g, '/');
-    const match = normalized.match(/\/teams\/([^/]+)\//);
-    return match ? match[1] : null;
   }
 
   async shutdown(): Promise<void> {

@@ -1,28 +1,31 @@
-import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Agent,
   AgentConfig,
   AgentStatus,
-  TeamConfig,
   Manager,
 } from './types';
 import {
-  getTeamsDir,
+  getTeamsFile,
   readJson,
   writeJsonAtomic,
-  listDirs,
 } from './persistence';
 import { BroadcastFn } from './auditLogger';
 
+interface TeamEntry {
+  id: string;
+  agents: AgentConfig[];
+  [key: string]: unknown;
+}
+
 export class ConfigManager implements Manager {
-  private teamsDir: string;
+  private teamsFile: string;
   private broadcast: BroadcastFn | null = null;
   // Cache of all agents by team
   private agentsByTeam: Map<string, AgentConfig[]> = new Map();
 
   constructor() {
-    this.teamsDir = getTeamsDir();
+    this.teamsFile = getTeamsFile();
   }
 
   setBroadcast(fn: BroadcastFn): void {
@@ -35,27 +38,24 @@ export class ConfigManager implements Manager {
   }
 
   /**
-   * Load all team-config.json files and build agent roster.
+   * Load all teams from data/teams.json and build agent roster.
    */
   async loadAll(): Promise<void> {
     this.agentsByTeam.clear();
-    const dirs = await listDirs(this.teamsDir);
-    for (const dir of dirs) {
-      if (dir === '_template' || dir === '99_Archive') continue;
-      const configPath = path.join(this.teamsDir, dir, 'team-config.json');
-      const config = await readJson<TeamConfig>(configPath, { agents: [] });
-      this.agentsByTeam.set(dir, config.agents);
+    const teams = await readJson<TeamEntry[]>(this.teamsFile, []);
+    for (const team of teams) {
+      this.agentsByTeam.set(team.id, team.agents || []);
     }
   }
 
   /**
-   * Reload a single team's config and diff against cached.
+   * Reload a single team's config from data/teams.json and diff against cached.
    */
-  async reloadTeam(teamDir: string): Promise<void> {
-    const configPath = path.join(this.teamsDir, teamDir, 'team-config.json');
-    const newConfig = await readJson<TeamConfig>(configPath, { agents: [] });
-    const oldAgents = this.agentsByTeam.get(teamDir) || [];
-    const newAgents = newConfig.agents;
+  async reloadTeam(teamId: string): Promise<void> {
+    const teams = await readJson<TeamEntry[]>(this.teamsFile, []);
+    const team = teams.find((t) => t.id === teamId);
+    const newAgents = team?.agents || [];
+    const oldAgents = this.agentsByTeam.get(teamId) || [];
 
     // Diff
     const oldIds = new Set(oldAgents.map((a) => a.id));
@@ -74,12 +74,12 @@ export class ConfigManager implements Manager {
       }
     }
 
-    this.agentsByTeam.set(teamDir, newAgents);
+    this.agentsByTeam.set(teamId, newAgents);
 
     if (added.length > 0 || removed.length > 0 || changed.length > 0) {
       if (this.broadcast) {
         this.broadcast('roster_update', {
-          teamDir,
+          teamDir: teamId,
           added: added.map((a) => a.id),
           removed: removed.map((a) => a.id),
           changed: changed.map((a) => a.id),
@@ -94,7 +94,7 @@ export class ConfigManager implements Manager {
    */
   getAllAgents(): Agent[] {
     const agents: Agent[] = [];
-    for (const [teamDir, configs] of this.agentsByTeam.entries()) {
+    for (const [teamId, configs] of this.agentsByTeam.entries()) {
       for (const ac of configs) {
         agents.push({
           id: ac.id,
@@ -106,7 +106,7 @@ export class ConfigManager implements Manager {
           providerId: ac.providerId,
           modelTier: ac.modelTier,
           mcpConnections: ac.mcpConnections || [],
-          teamId: teamDir,
+          teamId,
         });
       }
     }
@@ -116,16 +116,20 @@ export class ConfigManager implements Manager {
   /**
    * Get agents for a specific team.
    */
-  getTeamAgents(teamDir: string): AgentConfig[] {
-    return this.agentsByTeam.get(teamDir) || [];
+  getTeamAgents(teamId: string): AgentConfig[] {
+    return this.agentsByTeam.get(teamId) || [];
   }
 
   /**
    * Create a new agent in a team.
    */
-  async createAgent(teamDir: string, data: Partial<AgentConfig>): Promise<AgentConfig> {
-    const configPath = path.join(this.teamsDir, teamDir, 'team-config.json');
-    const config = await readJson<TeamConfig>(configPath, { agents: [] });
+  async createAgent(teamId: string, data: Partial<AgentConfig>): Promise<AgentConfig> {
+    const teams = await readJson<TeamEntry[]>(this.teamsFile, []);
+    const team = teams.find((t) => t.id === teamId);
+    if (!team) {
+      throw new Error(`Team not found: ${teamId}`);
+    }
+    if (!team.agents) team.agents = [];
 
     const agent: AgentConfig = {
       id: data.id || uuidv4(),
@@ -139,17 +143,17 @@ export class ConfigManager implements Manager {
       status: data.status || AgentStatus.Idle,
     };
 
-    config.agents.push(agent);
-    await writeJsonAtomic(configPath, config);
-    this.agentsByTeam.set(teamDir, config.agents);
+    team.agents.push(agent);
+    await writeJsonAtomic(this.teamsFile, teams);
+    this.agentsByTeam.set(teamId, team.agents);
 
     if (this.broadcast) {
       this.broadcast('roster_update', {
-        teamDir,
+        teamDir: teamId,
         added: [agent.id],
         removed: [],
         changed: [],
-        agents: config.agents,
+        agents: team.agents,
       });
     }
 
@@ -159,21 +163,22 @@ export class ConfigManager implements Manager {
   /**
    * Update an existing agent in a team.
    */
-  async updateAgent(teamDir: string, agentId: string, updates: Partial<AgentConfig>): Promise<AgentConfig | null> {
-    const configPath = path.join(this.teamsDir, teamDir, 'team-config.json');
-    const config = await readJson<TeamConfig>(configPath, { agents: [] });
+  async updateAgent(teamId: string, agentId: string, updates: Partial<AgentConfig>): Promise<AgentConfig | null> {
+    const teams = await readJson<TeamEntry[]>(this.teamsFile, []);
+    const team = teams.find((t) => t.id === teamId);
+    if (!team || !team.agents) return null;
 
-    const idx = config.agents.findIndex((a) => a.id === agentId);
+    const idx = team.agents.findIndex((a) => a.id === agentId);
     if (idx === -1) return null;
 
-    const agent = { ...config.agents[idx], ...updates, id: agentId };
-    config.agents[idx] = agent;
+    const agent = { ...team.agents[idx], ...updates, id: agentId };
+    team.agents[idx] = agent;
 
-    await writeJsonAtomic(configPath, config);
-    this.agentsByTeam.set(teamDir, config.agents);
+    await writeJsonAtomic(this.teamsFile, teams);
+    this.agentsByTeam.set(teamId, team.agents);
 
     if (this.broadcast) {
-      this.broadcast('agent_updated', { teamDir, agent });
+      this.broadcast('agent_updated', { teamDir: teamId, agent });
     }
 
     return agent;
@@ -182,19 +187,20 @@ export class ConfigManager implements Manager {
   /**
    * Delete an agent from a team.
    */
-  async deleteAgent(teamDir: string, agentId: string): Promise<boolean> {
-    const configPath = path.join(this.teamsDir, teamDir, 'team-config.json');
-    const config = await readJson<TeamConfig>(configPath, { agents: [] });
+  async deleteAgent(teamId: string, agentId: string): Promise<boolean> {
+    const teams = await readJson<TeamEntry[]>(this.teamsFile, []);
+    const team = teams.find((t) => t.id === teamId);
+    if (!team || !team.agents) return false;
 
-    const idx = config.agents.findIndex((a) => a.id === agentId);
+    const idx = team.agents.findIndex((a) => a.id === agentId);
     if (idx === -1) return false;
 
-    config.agents.splice(idx, 1);
-    await writeJsonAtomic(configPath, config);
-    this.agentsByTeam.set(teamDir, config.agents);
+    team.agents.splice(idx, 1);
+    await writeJsonAtomic(this.teamsFile, teams);
+    this.agentsByTeam.set(teamId, team.agents);
 
     if (this.broadcast) {
-      this.broadcast('agent_deleted', { teamDir, agentId });
+      this.broadcast('agent_deleted', { teamDir: teamId, agentId });
     }
 
     return true;

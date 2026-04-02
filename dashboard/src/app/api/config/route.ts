@@ -111,20 +111,6 @@ function writeJson(filePath: string, data: unknown): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
-function copyTemplateDir(src: string, dest: string): void {
-  fs.mkdirSync(dest, { recursive: true });
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry.name);
-    const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) {
-      copyTemplateDir(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
-}
-
 export async function GET() {
   try {
     const data = fs.readFileSync(CONFIG_PATH, 'utf-8');
@@ -153,33 +139,22 @@ export async function POST(req: NextRequest) {
         providers['defaultProvider'] = body.providers[0].id;
       }
     }
-    const teamNumbering = config['teamNumbering'] as Record<string, unknown> | undefined;
-    if (teamNumbering) {
-      teamNumbering['nextAvailable'] = 2;
-    }
     writeJson(CONFIG_PATH, config);
 
-    // 2. Create teams/00_Executive_Office/
-    const templateDir = path.join(ROOT, 'teams', '_template');
-    const execOfficeDir = path.join(ROOT, 'teams', '00_Executive_Office');
-    copyTemplateDir(templateDir, execOfficeDir);
+    // 2. Build teams array and write to data/teams.json
+    const teamsArray: {
+      id: string;
+      name: string;
+      icon: string;
+      color: string;
+      description: string;
+      agents: AgentPayload[];
+      channels: string[];
+      createdAt: string;
+      updatedAt: string;
+    }[] = [];
 
-    // Write team.json for Executive Office
-    const execTeamJson = {
-      name: 'Executive Office',
-      icon: 'Crown',
-      accent: '#1e40af',
-      description: 'C-suite leadership team',
-      floor: { width: 800, height: 500 },
-      budget: { monthly: null, spent: 0 },
-      projects: [],
-      channels: ['general'],
-      createdAt: now,
-      updatedAt: now,
-    };
-    writeJson(path.join(execOfficeDir, 'team.json'), execTeamJson);
-
-    // Write team-config.json with CEO + enabled executives
+    // Executive Office team
     const execAgents: AgentPayload[] = [
       {
         id: body.ceo.id,
@@ -188,6 +163,8 @@ export async function POST(req: NextRequest) {
         title: body.ceo.title,
         appearance: body.ceo.appearance,
         isHuman: true,
+        providerId: '',
+        modelTier: '',
         mcpConnections: [],
         status: 'idle',
       },
@@ -197,67 +174,33 @@ export async function POST(req: NextRequest) {
         role: e.role,
         title: e.title,
         appearance: e.appearance,
-        providerId: e.providerId,
-        modelTier: e.modelTier,
+        providerId: e.providerId ?? '',
+        modelTier: e.modelTier ?? '',
         mcpConnections: [] as string[],
         status: 'idle',
       })),
     ];
-    writeJson(path.join(execOfficeDir, 'team-config.json'), { agents: execAgents });
 
-    // Write state.json with empty agent states
-    const execAgentStates: Record<string, { status: string; currentTask: null; position: { x: number; y: number } }> = {};
-    execAgents.forEach((a, i) => {
-      execAgentStates[a.id] = {
-        status: 'idle',
-        currentTask: null,
-        position: { x: 100 + i * 120, y: 300 },
-      };
-    });
-    writeJson(path.join(execOfficeDir, 'state.json'), {
-      agents: execAgentStates,
-      lastUpdate: now,
+    teamsArray.push({
+      id: 'executive-office',
+      name: 'Executive Office',
+      icon: 'Crown',
+      color: '#1e40af',
+      description: 'C-suite leadership team',
+      agents: execAgents,
+      channels: ['general'],
+      createdAt: now,
+      updatedAt: now,
     });
 
-    // Write channels.json
-    writeJson(path.join(execOfficeDir, 'messages', 'channels.json'), {
-      channels: [
-        {
-          id: 'general',
-          name: 'general',
-          type: 'channel',
-          members: execAgents.map((a) => a.id),
-          createdAt: now,
-        },
-      ],
-      dms: [],
-    });
-
-    // Update CLAUDE.md
-    const execClaudeMd = `Executive Office. Director:${body.ceo.name}->CEO. Read team.json, state.json, goals/, tasks/. Post to #general. Follow governance/rules/. Check library/.`;
-    fs.writeFileSync(path.join(execOfficeDir, 'CLAUDE.md'), execClaudeMd);
-
-    // 3. Create first team directory (01_TeamName)
+    // 3. First user team
     if (body.team.name) {
-      const sanitizedName = body.team.name.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
-      const firstTeamDir = path.join(ROOT, 'teams', `01_${sanitizedName}`);
-      copyTemplateDir(templateDir, firstTeamDir);
+      const teamSlug = body.team.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
 
-      const firstTeamJson = {
-        name: body.team.name,
-        icon: body.team.icon || 'Users',
-        accent: body.team.color || '#3b82f6',
-        description: body.team.description || '',
-        floor: { width: 800, height: 500 },
-        budget: { monthly: null, spent: 0 },
-        projects: [],
-        channels: ['general'],
-        createdAt: now,
-        updatedAt: now,
-      };
-      writeJson(path.join(firstTeamDir, 'team.json'), firstTeamJson);
-
-      // Build team agents list: leader + agents
       const teamAgents: AgentPayload[] = [
         {
           id: body.team.leader.id,
@@ -265,8 +208,8 @@ export async function POST(req: NextRequest) {
           role: body.team.leader.role,
           title: body.team.leader.title,
           appearance: body.team.leader.appearance,
-          providerId: body.team.leader.providerId,
-          modelTier: body.team.leader.modelTier,
+          providerId: body.team.leader.providerId ?? '',
+          modelTier: body.team.leader.modelTier ?? '',
           mcpConnections: [],
           status: 'idle',
         },
@@ -276,46 +219,27 @@ export async function POST(req: NextRequest) {
           role: a.role,
           title: a.title,
           appearance: a.appearance,
-          providerId: a.providerId,
-          modelTier: a.modelTier,
+          providerId: a.providerId ?? '',
+          modelTier: a.modelTier ?? '',
           mcpConnections: [] as string[],
           status: 'idle',
         })),
       ];
-      writeJson(path.join(firstTeamDir, 'team-config.json'), { agents: teamAgents });
 
-      // state.json
-      const teamAgentStates: Record<string, { status: string; currentTask: null; position: { x: number; y: number } }> = {};
-      teamAgents.forEach((a, i) => {
-        teamAgentStates[a.id] = {
-          status: 'idle',
-          currentTask: null,
-          position: { x: 100 + i * 120, y: 300 },
-        };
+      teamsArray.push({
+        id: teamSlug,
+        name: body.team.name,
+        icon: body.team.icon || 'Users',
+        color: body.team.color || '#3b82f6',
+        description: body.team.description || '',
+        agents: teamAgents,
+        channels: ['general'],
+        createdAt: now,
+        updatedAt: now,
       });
-      writeJson(path.join(firstTeamDir, 'state.json'), {
-        agents: teamAgentStates,
-        lastUpdate: now,
-      });
-
-      // channels.json
-      writeJson(path.join(firstTeamDir, 'messages', 'channels.json'), {
-        channels: [
-          {
-            id: 'general',
-            name: 'general',
-            type: 'channel',
-            members: teamAgents.map((a) => a.id),
-            createdAt: now,
-          },
-        ],
-        dms: [],
-      });
-
-      // CLAUDE.md
-      const teamClaudeMd = `${body.team.name}. Director:${body.team.leader.name}->CoS->CEO. Read team.json, state.json, goals/, tasks/. Post to #general. Follow governance/rules/. Check library/.`;
-      fs.writeFileSync(path.join(firstTeamDir, 'CLAUDE.md'), teamClaudeMd);
     }
+
+    writeJson(path.join(ROOT, 'data', 'teams.json'), teamsArray);
 
     // 4. Write data/company/company.json
     writeJson(path.join(ROOT, 'data', 'company', 'company.json'), {

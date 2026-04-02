@@ -646,10 +646,6 @@ export interface PlatformConfig {
     enabled: boolean;
     bufferMinutes: number;
   };
-  teamNumbering: {
-    reserved: Record<string, string>;
-    nextAvailable: number;
-  };
   budgets: {
     enabled: boolean;
     companyMonthlyLimit: number | null;

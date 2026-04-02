@@ -7,9 +7,8 @@ import {
   CompanyInfo,
   OnboardingState,
   Team,
-  TeamConfig,
-  TeamState,
   Agent,
+  AgentAppearance,
   AgentStatus,
   Project,
   Task,
@@ -30,7 +29,10 @@ import {
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const DATA_DIR = path.join(ROOT, 'data');
-const TEAMS_DIR = path.join(ROOT, 'teams');
+const TEAMS_FILE = path.join(DATA_DIR, 'teams.json');
+const GOALS_FILE = path.join(DATA_DIR, 'goals.json');
+const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json');
+const MESSAGES_DIR = path.join(DATA_DIR, 'messages');
 const GOVERNANCE_DIR = path.join(ROOT, 'governance');
 const LIBRARY_DIR = path.join(ROOT, 'library');
 const CONFIG_PATH = path.join(ROOT, 'config.json');
@@ -45,8 +47,17 @@ export function getRootDir(): string {
 export function getDataDir(): string {
   return DATA_DIR;
 }
-export function getTeamsDir(): string {
-  return TEAMS_DIR;
+export function getTeamsFile(): string {
+  return TEAMS_FILE;
+}
+export function getGoalsFile(): string {
+  return GOALS_FILE;
+}
+export function getChannelsFile(): string {
+  return CHANNELS_FILE;
+}
+export function getMessagesDir(): string {
+  return MESSAGES_DIR;
 }
 export function getGovernanceDir(): string {
   return GOVERNANCE_DIR;
@@ -184,20 +195,6 @@ export async function copyDir(src: string, dest: string): Promise<void> {
 }
 
 /**
- * Move a directory (rename).
- */
-export async function moveDir(src: string, dest: string): Promise<void> {
-  await ensureDir(path.dirname(dest));
-  try {
-    await fsp.rename(src, dest);
-  } catch {
-    // Cross-device rename fallback: copy then remove
-    await copyDir(src, dest);
-    await fsp.rm(src, { recursive: true, force: true });
-  }
-}
-
-/**
  * Assemble full state for full_state_sync.
  */
 export async function assembleFullState(): Promise<FullState> {
@@ -211,65 +208,62 @@ export async function assembleFullState(): Promise<FullState> {
     { currentStep: 0, completedSteps: [], startedAt: null, completedAt: null }
   );
 
-  // Load teams
-  const teamDirs = await listDirs(TEAMS_DIR);
+  // Load teams from flat file
+  interface TeamFileAgent {
+    id: string;
+    name: string;
+    role: string;
+    status: AgentStatus;
+    appearance: AgentAppearance;
+    providerId: string;
+    modelTier: string;
+    mcpConnections: string[];
+  }
+  interface TeamFileEntry {
+    id: string;
+    name: string;
+    icon: string;
+    accent: string;
+    description: string;
+    floor: number | { width: number; height: number };
+    budget: number | { monthly: number | null; spent: number };
+    projects: string[];
+    channels: string[];
+    agents: TeamFileAgent[];
+    createdAt: string | null;
+    updatedAt: string | null;
+  }
+  const teamsArray = await readJson<TeamFileEntry[]>(TEAMS_FILE, []);
   const teams: Team[] = [];
   const agents: Agent[] = [];
-  const channels: Channel[] = [];
-  const goals: Goal[] = [];
 
-  for (const dir of teamDirs) {
-    if (dir === '_template' || dir === '99_Archive') continue;
-    const teamPath = path.join(TEAMS_DIR, dir);
-    const teamData = await readJson<Team>(path.join(teamPath, 'team.json'), null as unknown as Team);
-    if (!teamData) continue;
-    if (!teamData.id) teamData.id = dir;
-    teams.push(teamData);
+  for (const teamEntry of teamsArray) {
+    const { agents: teamAgents, ...teamData } = teamEntry;
+    teams.push({ ...teamData, agents: (teamAgents || []).map(a => a.id) } as Team);
 
-    const teamConfig = await readJson<TeamConfig>(
-      path.join(teamPath, 'team-config.json'),
-      { agents: [] }
-    );
-    const teamState = await readJson<TeamState>(
-      path.join(teamPath, 'state.json'),
-      { agents: {}, lastUpdate: null }
-    );
-
-    for (const ac of teamConfig.agents) {
-      const stateInfo = teamState.agents[ac.id] || {};
-      agents.push({
-        id: ac.id,
-        name: ac.name,
-        role: ac.role,
-        status: (stateInfo as { status?: AgentStatus }).status || ac.status || AgentStatus.Idle,
-        appearance: ac.appearance,
-        position: (stateInfo as { position?: { x: number; y: number } }).position || { x: 0, y: 0 },
-        providerId: ac.providerId,
-        modelTier: ac.modelTier,
-        mcpConnections: ac.mcpConnections || [],
-        teamId: dir,
-      });
-    }
-
-    // Channels
-    const channelsData = await readJson<{ channels: Channel[] }>(
-      path.join(teamPath, 'messages', 'channels.json'),
-      { channels: [] }
-    );
-    for (const ch of channelsData.channels) {
-      ch.teamId = dir;
-      channels.push(ch);
-    }
-
-    // Goals
-    const goalsDir = path.join(teamPath, 'goals');
-    const goalFiles = await listFiles(goalsDir);
-    for (const gf of goalFiles) {
-      if (!gf.endsWith('.json')) continue;
-      const goal = await readJson<Goal>(path.join(goalsDir, gf), null as unknown as Goal);
-      if (goal) goals.push(goal);
+    if (teamAgents && Array.isArray(teamAgents)) {
+      for (const ag of teamAgents) {
+        agents.push({
+          id: ag.id,
+          name: ag.name,
+          role: ag.role,
+          status: ag.status || AgentStatus.Idle,
+          appearance: ag.appearance,
+          position: { x: 0, y: 0 },
+          providerId: ag.providerId,
+          modelTier: ag.modelTier,
+          mcpConnections: ag.mcpConnections || [],
+          teamId: teamEntry.id,
+        });
+      }
     }
   }
+
+  // Channels
+  const channels = await readJson<Channel[]>(CHANNELS_FILE, []);
+
+  // Goals
+  const goals = await readJson<Goal[]>(GOALS_FILE, []);
 
   const projectsData = await readJson<{ projects: Project[] }>(
     path.join(DATA_DIR, 'projects', 'projects.json'),
@@ -391,10 +385,10 @@ export class PersistenceManager implements Manager {
       path.join(DATA_DIR, 'providers'),
       path.join(DATA_DIR, 'runs'),
       path.join(DATA_DIR, 'tasks'),
+      MESSAGES_DIR,
       path.join(GOVERNANCE_DIR, 'history'),
       path.join(GOVERNANCE_DIR, 'rules'),
       LIBRARY_DIR,
-      TEAMS_DIR,
     ];
     for (const d of dirs) {
       await ensureDir(d);

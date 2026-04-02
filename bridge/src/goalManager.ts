@@ -1,4 +1,3 @@
-import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Goal,
@@ -10,22 +9,20 @@ import {
   Manager,
 } from './types';
 import {
-  getTeamsDir,
+  getGoalsFile,
   getDataDir,
   readJson,
   writeJsonAtomic,
-  ensureDir,
-  listFiles,
-  listDirs,
 } from './persistence';
+import * as path from 'path';
 import { BroadcastFn } from './auditLogger';
 
 export class GoalManager implements Manager {
-  private teamsDir: string;
+  private goalsFile: string;
   private broadcast: BroadcastFn | null = null;
 
   constructor() {
-    this.teamsDir = getTeamsDir();
+    this.goalsFile = getGoalsFile();
   }
 
   setBroadcast(fn: BroadcastFn): void {
@@ -36,63 +33,44 @@ export class GoalManager implements Manager {
     console.log('[goals] Goal manager initialized.');
   }
 
-  private goalsDir(teamDir: string): string {
-    return path.join(this.teamsDir, teamDir, 'goals');
+  private async readGoals(): Promise<Goal[]> {
+    return readJson<Goal[]>(this.goalsFile, []);
   }
 
-  private goalPath(teamDir: string, goalId: string): string {
-    return path.join(this.goalsDir(teamDir), `${goalId}.json`);
+  private async writeGoals(goals: Goal[]): Promise<void> {
+    await writeJsonAtomic(this.goalsFile, goals);
   }
 
   /**
    * List all goals for a team.
    */
-  async listGoals(teamDir: string): Promise<Goal[]> {
-    const dir = this.goalsDir(teamDir);
-    await ensureDir(dir);
-    const files = await listFiles(dir);
-    const goals: Goal[] = [];
-
-    for (const f of files) {
-      if (!f.endsWith('.json')) continue;
-      const goal = await readJson<Goal>(path.join(dir, f), null as unknown as Goal);
-      if (goal) goals.push(goal);
-    }
-
-    return goals;
+  async listGoals(teamId: string): Promise<Goal[]> {
+    const goals = await this.readGoals();
+    return goals.filter((g) => g.team === teamId);
   }
 
   /**
    * List all goals across all teams.
    */
   async listAllGoals(): Promise<Goal[]> {
-    const dirs = await listDirs(this.teamsDir);
-    const allGoals: Goal[] = [];
-
-    for (const dir of dirs) {
-      if (dir === '_template' || dir === '99_Archive') continue;
-      const goals = await this.listGoals(dir);
-      allGoals.push(...goals);
-    }
-
-    return allGoals;
+    return this.readGoals();
   }
 
   /**
    * Get a single goal.
    */
-  async getGoal(teamDir: string, goalId: string): Promise<Goal | null> {
-    return readJson<Goal>(this.goalPath(teamDir, goalId), null as unknown as Goal);
+  async getGoal(_teamId: string, goalId: string): Promise<Goal | null> {
+    const goals = await this.readGoals();
+    return goals.find((g) => g.id === goalId) || null;
   }
 
   /**
    * Create a new goal.
    */
-  async createGoal(teamDir: string, input: Partial<Goal>): Promise<Goal> {
-    const dir = this.goalsDir(teamDir);
-    await ensureDir(dir);
-
+  async createGoal(teamId: string, input: Partial<Goal>): Promise<Goal> {
+    const goals = await this.readGoals();
     const now = new Date().toISOString();
+
     const goal: Goal = {
       id: input.id || uuidv4(),
       title: input.title || 'New Goal',
@@ -100,9 +78,9 @@ export class GoalManager implements Manager {
       status: input.status || GoalStatus.NotStarted,
       priority: input.priority || TaskPriority.Medium,
       owner: input.owner || '',
-      team: teamDir,
+      team: teamId,
       project: input.project || '',
-      teams: input.teams || [teamDir],
+      teams: input.teams || [teamId],
       linkedTasks: input.linkedTasks || [],
       taskProgress: 0,
       children: input.children || [],
@@ -112,10 +90,11 @@ export class GoalManager implements Manager {
       updatedAt: now,
     };
 
-    await writeJsonAtomic(this.goalPath(teamDir, goal.id), goal);
+    goals.push(goal);
+    await this.writeGoals(goals);
 
     if (this.broadcast) {
-      this.broadcast('goal_created', { teamDir, goal });
+      this.broadcast('goal_created', { teamDir: teamId, goal });
     }
 
     return goal;
@@ -124,23 +103,24 @@ export class GoalManager implements Manager {
   /**
    * Update a goal.
    */
-  async updateGoal(teamDir: string, goalId: string, updates: Partial<Goal>): Promise<Goal | null> {
-    const goalFile = this.goalPath(teamDir, goalId);
-    const goal = await readJson<Goal>(goalFile, null as unknown as Goal);
-    if (!goal) return null;
+  async updateGoal(teamId: string, goalId: string, updates: Partial<Goal>): Promise<Goal | null> {
+    const goals = await this.readGoals();
+    const idx = goals.findIndex((g) => g.id === goalId);
+    if (idx === -1) return null;
 
     const updated: Goal = {
-      ...goal,
+      ...goals[idx],
       ...updates,
       id: goalId,
-      team: teamDir,
+      team: teamId,
       updatedAt: new Date().toISOString(),
     };
 
-    await writeJsonAtomic(goalFile, updated);
+    goals[idx] = updated;
+    await this.writeGoals(goals);
 
     if (this.broadcast) {
-      this.broadcast('goal_updated', { teamDir, goal: updated });
+      this.broadcast('goal_updated', { teamDir: teamId, goal: updated });
     }
 
     return updated;
@@ -149,26 +129,24 @@ export class GoalManager implements Manager {
   /**
    * Delete a goal.
    */
-  async deleteGoal(teamDir: string, goalId: string): Promise<boolean> {
-    const goalFile = this.goalPath(teamDir, goalId);
-    try {
-      const fsp = await import('fs/promises');
-      await fsp.unlink(goalFile);
-    } catch {
-      return false;
-    }
+  async deleteGoal(teamId: string, goalId: string): Promise<boolean> {
+    const goals = await this.readGoals();
+    const idx = goals.findIndex((g) => g.id === goalId);
+    if (idx === -1) return false;
+
+    goals.splice(idx, 1);
 
     // Remove from parent's children
-    const allGoals = await this.listGoals(teamDir);
-    for (const g of allGoals) {
+    for (const g of goals) {
       if (g.children.includes(goalId)) {
         g.children = g.children.filter((c) => c !== goalId);
-        await writeJsonAtomic(this.goalPath(teamDir, g.id), g);
       }
     }
 
+    await this.writeGoals(goals);
+
     if (this.broadcast) {
-      this.broadcast('goal_deleted', { teamDir, goalId });
+      this.broadcast('goal_deleted', { teamDir: teamId, goalId });
     }
 
     return true;
@@ -177,8 +155,9 @@ export class GoalManager implements Manager {
   /**
    * Add a comment to a goal.
    */
-  async addComment(teamDir: string, goalId: string, comment: Partial<TaskComment>): Promise<Goal | null> {
-    const goal = await this.getGoal(teamDir, goalId);
+  async addComment(teamId: string, goalId: string, comment: Partial<TaskComment>): Promise<Goal | null> {
+    const goals = await this.readGoals();
+    const goal = goals.find((g) => g.id === goalId);
     if (!goal) return null;
 
     const newComment: TaskComment = {
@@ -191,10 +170,10 @@ export class GoalManager implements Manager {
 
     goal.comments.push(newComment);
     goal.updatedAt = new Date().toISOString();
-    await writeJsonAtomic(this.goalPath(teamDir, goalId), goal);
+    await this.writeGoals(goals);
 
     if (this.broadcast) {
-      this.broadcast('goal_updated', { teamDir, goal });
+      this.broadcast('goal_updated', { teamDir: teamId, goal });
     }
 
     return goal;
@@ -203,15 +182,16 @@ export class GoalManager implements Manager {
   /**
    * Transition a goal's status.
    */
-  async transitionStatus(teamDir: string, goalId: string, newStatus: GoalStatus): Promise<Goal | null> {
-    return this.updateGoal(teamDir, goalId, { status: newStatus });
+  async transitionStatus(teamId: string, goalId: string, newStatus: GoalStatus): Promise<Goal | null> {
+    return this.updateGoal(teamId, goalId, { status: newStatus });
   }
 
   /**
    * Recalculate goal progress from linked tasks.
    */
-  async recalculateProgress(teamDir: string, goalId: string): Promise<Goal | null> {
-    const goal = await this.getGoal(teamDir, goalId);
+  async recalculateProgress(teamId: string, goalId: string): Promise<Goal | null> {
+    const goals = await this.readGoals();
+    const goal = goals.find((g) => g.id === goalId);
     if (!goal) return null;
 
     let taskProgress = 0;
@@ -232,7 +212,7 @@ export class GoalManager implements Manager {
     if (goal.children.length > 0) {
       let total = 0;
       for (const childId of goal.children) {
-        const child = await this.getGoal(teamDir, childId);
+        const child = goals.find((g) => g.id === childId);
         if (child) {
           total += child.progress;
         }
@@ -250,14 +230,14 @@ export class GoalManager implements Manager {
       progress = taskProgress;
     }
 
-    return this.updateGoal(teamDir, goalId, { progress, taskProgress });
+    return this.updateGoal(teamId, goalId, { progress, taskProgress });
   }
 
   /**
    * Get cross-team goals (goals associated with multiple teams).
    */
   async getCrossTeamGoals(): Promise<Goal[]> {
-    const allGoals = await this.listAllGoals();
+    const allGoals = await this.readGoals();
     return allGoals.filter((g) => g.teams && g.teams.length > 1);
   }
 

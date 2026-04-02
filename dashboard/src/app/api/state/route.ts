@@ -4,51 +4,37 @@ import * as path from 'path';
 
 const ROOT = path.resolve(process.cwd(), '..');
 
-interface TeamJson {
-  name: string;
-  icon: string;
-  accent: string;
-  description: string;
-  floor: { width: number; height: number };
-  budget: { monthly: number | null; spent: number };
-  projects: string[];
-  channels: string[];
-  createdAt: string | null;
-  updatedAt: string | null;
-}
-
-interface AgentConfigJson {
+interface TeamsJsonAgent {
   id: string;
   name: string;
   role: string;
   title: string;
   appearance: { hair: string; shirt: string; pants: string; skin: string };
+  isHuman?: boolean;
   providerId?: string;
   modelTier?: string;
-  isHuman?: boolean;
   mcpConnections: string[];
   status: string;
 }
 
-interface TeamConfigJson {
-  agents: AgentConfigJson[];
-}
-
-interface StateJson {
-  agents: Record<string, { status: string; currentTask: string | null; position: { x: number; y: number } }>;
-  lastUpdate: string | null;
+interface TeamsJsonEntry {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  agents: TeamsJsonAgent[];
+  channels: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AssembledTeam {
   id: string;
-  dirName: string;
   name: string;
   icon: string;
   accent: string;
   description: string;
-  floor: number;
-  budget: number;
-  projects: string[];
   channels: string[];
   agents: string[];
 }
@@ -105,52 +91,36 @@ export async function GET() {
       }
     }
 
-    // Read all team directories
-    const teamsDir = path.join(ROOT, 'teams');
+    // Read teams from data/teams.json
+    const teamsData = readJson<TeamsJsonEntry[]>(path.join(ROOT, 'data', 'teams.json'));
     const teams: AssembledTeam[] = [];
     const agents: AssembledAgent[] = [];
 
-    if (fs.existsSync(teamsDir)) {
-      const teamDirs = fs
-        .readdirSync(teamsDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory() && !d.name.startsWith('_'))
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-      for (const dir of teamDirs) {
-        const teamDir = path.join(teamsDir, dir.name);
-        const teamJson = readJson<TeamJson>(path.join(teamDir, 'team.json'));
-        const teamConfig = readJson<TeamConfigJson>(path.join(teamDir, 'team-config.json'));
-        const stateJson = readJson<StateJson>(path.join(teamDir, 'state.json'));
-
-        if (!teamJson || !teamConfig) continue;
-
-        const teamId = dir.name;
-        const teamAgentIds = teamConfig.agents.map((a) => a.id);
+    if (teamsData && Array.isArray(teamsData)) {
+      for (const entry of teamsData) {
+        const teamId = entry.id;
+        const teamAgentIds = entry.agents.map((a) => a.id);
 
         teams.push({
           id: teamId,
-          dirName: dir.name,
-          name: teamJson.name,
-          icon: teamJson.icon,
-          accent: teamJson.accent,
-          description: teamJson.description,
-          floor: teamJson.floor.width,
-          budget: teamJson.budget.spent,
-          projects: teamJson.projects,
-          channels: teamJson.channels,
+          name: entry.name,
+          icon: entry.icon,
+          accent: entry.color,
+          description: entry.description,
+          channels: entry.channels,
           agents: teamAgentIds,
         });
 
         // Build agent entries
-        for (const agentConf of teamConfig.agents) {
-          const agentState = stateJson?.agents?.[agentConf.id];
+        for (let i = 0; i < entry.agents.length; i++) {
+          const agentConf = entry.agents[i];
           agents.push({
             id: agentConf.id,
             name: agentConf.name,
             role: agentConf.role,
-            status: agentState?.status ?? agentConf.status ?? 'idle',
+            status: agentConf.status ?? 'idle',
             appearance: agentConf.appearance,
-            position: agentState?.position ?? { x: 200, y: 300 },
+            position: { x: 100 + i * 120, y: 300 },
             providerId: agentConf.providerId ?? '',
             modelTier: agentConf.modelTier ?? 'sonnet',
             mcpConnections: agentConf.mcpConnections ?? [],

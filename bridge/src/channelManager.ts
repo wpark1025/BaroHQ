@@ -6,7 +6,8 @@ import {
   Manager,
 } from './types';
 import {
-  getTeamsDir,
+  getChannelsFile,
+  getMessagesDir,
   readJson,
   writeJsonAtomic,
   ensureDir,
@@ -14,18 +15,16 @@ import {
 } from './persistence';
 import { BroadcastFn } from './auditLogger';
 
-interface ChannelsFile {
-  channels: Channel[];
-}
-
 const MAX_MESSAGES_PER_FILE = 10000;
 
 export class ChannelManager implements Manager {
-  private teamsDir: string;
+  private channelsFile: string;
+  private messagesDir: string;
   private broadcast: BroadcastFn | null = null;
 
   constructor() {
-    this.teamsDir = getTeamsDir();
+    this.channelsFile = getChannelsFile();
+    this.messagesDir = getMessagesDir();
   }
 
   setBroadcast(fn: BroadcastFn): void {
@@ -36,38 +35,29 @@ export class ChannelManager implements Manager {
     console.log('[channels] Channel manager initialized.');
   }
 
-  private channelsPath(teamDir: string): string {
-    return path.join(this.teamsDir, teamDir, 'messages', 'channels.json');
-  }
-
-  private historyDir(teamDir: string): string {
-    return path.join(this.teamsDir, teamDir, 'messages', 'history');
-  }
-
   /**
    * Get the current history file for a channel (handles rotation).
    */
-  private async currentHistoryFile(teamDir: string, channelId: string): Promise<string> {
-    const dir = this.historyDir(teamDir);
-    await ensureDir(dir);
-    const files = await listFiles(dir);
+  private async currentHistoryFile(channelId: string): Promise<string> {
+    await ensureDir(this.messagesDir);
+    const files = await listFiles(this.messagesDir);
     const channelFiles = files
       .filter((f) => f.startsWith(`${channelId}-`) && f.endsWith('.json'))
       .sort();
 
     if (channelFiles.length === 0) {
-      return path.join(dir, `${channelId}-001.json`);
+      return path.join(this.messagesDir, `${channelId}-001.json`);
     }
 
     const lastFile = channelFiles[channelFiles.length - 1];
-    const lastPath = path.join(dir, lastFile);
+    const lastPath = path.join(this.messagesDir, lastFile);
     const data = await readJson<{ messages: Message[] }>(lastPath, { messages: [] });
 
     if (data.messages.length >= MAX_MESSAGES_PER_FILE) {
       // Rotate: create next file
       const match = lastFile.match(/-(\d+)\.json$/);
       const nextNum = match ? parseInt(match[1], 10) + 1 : 2;
-      return path.join(dir, `${channelId}-${String(nextNum).padStart(3, '0')}.json`);
+      return path.join(this.messagesDir, `${channelId}-${String(nextNum).padStart(3, '0')}.json`);
     }
 
     return lastPath;
@@ -78,33 +68,31 @@ export class ChannelManager implements Manager {
   /**
    * List channels for a team.
    */
-  async listChannels(teamDir: string): Promise<Channel[]> {
-    const data = await readJson<ChannelsFile>(this.channelsPath(teamDir), { channels: [] });
-    return data.channels;
+  async listChannels(teamId: string): Promise<Channel[]> {
+    const channels = await readJson<Channel[]>(this.channelsFile, []);
+    return channels.filter((c) => c.teamId === teamId);
   }
 
   /**
    * Create a channel in a team.
    */
-  async createChannel(teamDir: string, input: Partial<Channel>): Promise<Channel> {
-    const channelsFile = this.channelsPath(teamDir);
-    await ensureDir(path.dirname(channelsFile));
-    const data = await readJson<ChannelsFile>(channelsFile, { channels: [] });
+  async createChannel(teamId: string, input: Partial<Channel>): Promise<Channel> {
+    const channels = await readJson<Channel[]>(this.channelsFile, []);
 
     const channel: Channel = {
       id: input.id || uuidv4(),
       name: input.name || 'general',
       type: input.type || 'team',
       members: input.members || [],
-      teamId: teamDir,
+      teamId,
       unread: 0,
     };
 
-    data.channels.push(channel);
-    await writeJsonAtomic(channelsFile, data);
+    channels.push(channel);
+    await writeJsonAtomic(this.channelsFile, channels);
 
     if (this.broadcast) {
-      this.broadcast('channel_created', { teamDir, channel });
+      this.broadcast('channel_created', { teamDir: teamId, channel });
     }
 
     return channel;
@@ -113,18 +101,17 @@ export class ChannelManager implements Manager {
   /**
    * Update a channel.
    */
-  async updateChannel(teamDir: string, channelId: string, updates: Partial<Channel>): Promise<Channel | null> {
-    const channelsFile = this.channelsPath(teamDir);
-    const data = await readJson<ChannelsFile>(channelsFile, { channels: [] });
-    const idx = data.channels.findIndex((c) => c.id === channelId);
+  async updateChannel(teamId: string, channelId: string, updates: Partial<Channel>): Promise<Channel | null> {
+    const channels = await readJson<Channel[]>(this.channelsFile, []);
+    const idx = channels.findIndex((c) => c.id === channelId && c.teamId === teamId);
     if (idx === -1) return null;
 
-    const channel = { ...data.channels[idx], ...updates, id: channelId, teamId: teamDir };
-    data.channels[idx] = channel;
-    await writeJsonAtomic(channelsFile, data);
+    const channel = { ...channels[idx], ...updates, id: channelId, teamId };
+    channels[idx] = channel;
+    await writeJsonAtomic(this.channelsFile, channels);
 
     if (this.broadcast) {
-      this.broadcast('channel_updated', { teamDir, channel });
+      this.broadcast('channel_updated', { teamDir: teamId, channel });
     }
 
     return channel;
@@ -135,7 +122,7 @@ export class ChannelManager implements Manager {
   /**
    * Send a message to a channel.
    */
-  async sendMessage(teamDir: string, channelId: string, input: Partial<Message>): Promise<Message> {
+  async sendMessage(_teamId: string, channelId: string, input: Partial<Message>): Promise<Message> {
     const message: Message = {
       id: input.id || uuidv4(),
       channelId,
@@ -146,22 +133,21 @@ export class ChannelManager implements Manager {
       thread: input.thread || [],
     };
 
-    const historyFile = await this.currentHistoryFile(teamDir, channelId);
+    const historyFile = await this.currentHistoryFile(channelId);
     const data = await readJson<{ messages: Message[] }>(historyFile, { messages: [] });
     data.messages.push(message);
     await writeJsonAtomic(historyFile, data);
 
-    // Increment unread for other members
-    const channelsFile = this.channelsPath(teamDir);
-    const channelsData = await readJson<ChannelsFile>(channelsFile, { channels: [] });
-    const chIdx = channelsData.channels.findIndex((c) => c.id === channelId);
+    // Increment unread
+    const channels = await readJson<Channel[]>(this.channelsFile, []);
+    const chIdx = channels.findIndex((c) => c.id === channelId);
     if (chIdx !== -1) {
-      channelsData.channels[chIdx].unread += 1;
-      await writeJsonAtomic(channelsFile, channelsData);
+      channels[chIdx].unread += 1;
+      await writeJsonAtomic(this.channelsFile, channels);
     }
 
     if (this.broadcast) {
-      this.broadcast('message', { teamDir, channelId, message });
+      this.broadcast('message', { teamDir: _teamId, channelId, message });
     }
 
     return message;
@@ -170,33 +156,32 @@ export class ChannelManager implements Manager {
   /**
    * Send a direct message (DM). Uses a special DM channel.
    */
-  async sendDm(teamDir: string, fromAgent: string, toAgent: string, text: string): Promise<Message> {
+  async sendDm(teamId: string, fromAgent: string, toAgent: string, text: string): Promise<Message> {
     // Create or find DM channel
     const dmChannelId = [fromAgent, toAgent].sort().join('_dm_');
-    const channelsFile = this.channelsPath(teamDir);
-    const channelsData = await readJson<ChannelsFile>(channelsFile, { channels: [] });
+    const channels = await readJson<Channel[]>(this.channelsFile, []);
 
-    let channel = channelsData.channels.find((c) => c.id === dmChannelId);
+    let channel = channels.find((c) => c.id === dmChannelId);
     if (!channel) {
       channel = {
         id: dmChannelId,
         name: `DM: ${fromAgent} & ${toAgent}`,
         type: 'direct' as const,
         members: [fromAgent, toAgent],
-        teamId: teamDir,
+        teamId,
         unread: 0,
       };
-      channelsData.channels.push(channel);
-      await writeJsonAtomic(channelsFile, channelsData);
+      channels.push(channel);
+      await writeJsonAtomic(this.channelsFile, channels);
     }
 
-    const message = await this.sendMessage(teamDir, dmChannelId, {
+    const message = await this.sendMessage(teamId, dmChannelId, {
       author: fromAgent,
       text,
     });
 
     if (this.broadcast) {
-      this.broadcast('dm_message', { teamDir, from: fromAgent, to: toAgent, message });
+      this.broadcast('dm_message', { teamDir: teamId, from: fromAgent, to: toAgent, message });
     }
 
     return message;
@@ -205,12 +190,11 @@ export class ChannelManager implements Manager {
   /**
    * Get message history for a channel.
    */
-  async getMessages(teamDir: string, channelId: string, options?: {
+  async getMessages(_teamId: string, channelId: string, options?: {
     limit?: number;
     before?: string;
   }): Promise<Message[]> {
-    const dir = this.historyDir(teamDir);
-    const files = await listFiles(dir);
+    const files = await listFiles(this.messagesDir);
     const channelFiles = files
       .filter((f) => f.startsWith(`${channelId}-`) && f.endsWith('.json'))
       .sort();
@@ -219,7 +203,7 @@ export class ChannelManager implements Manager {
     // Read from newest file backward
     for (let i = channelFiles.length - 1; i >= 0; i--) {
       const data = await readJson<{ messages: Message[] }>(
-        path.join(dir, channelFiles[i]),
+        path.join(this.messagesDir, channelFiles[i]),
         { messages: [] }
       );
       allMessages.unshift(...data.messages);
@@ -245,13 +229,12 @@ export class ChannelManager implements Manager {
   /**
    * Mark a channel as read (reset unread to 0).
    */
-  async markRead(teamDir: string, channelId: string): Promise<void> {
-    const channelsFile = this.channelsPath(teamDir);
-    const data = await readJson<ChannelsFile>(channelsFile, { channels: [] });
-    const idx = data.channels.findIndex((c) => c.id === channelId);
+  async markRead(_teamId: string, channelId: string): Promise<void> {
+    const channels = await readJson<Channel[]>(this.channelsFile, []);
+    const idx = channels.findIndex((c) => c.id === channelId);
     if (idx !== -1) {
-      data.channels[idx].unread = 0;
-      await writeJsonAtomic(channelsFile, data);
+      channels[idx].unread = 0;
+      await writeJsonAtomic(this.channelsFile, channels);
     }
   }
 

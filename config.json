@@ -29,13 +29,6 @@
     "enabled": true,
     "bufferMinutes": 2
   },
-  "teamNumbering": {
-    "reserved": {
-      "99": "Archive",
-      "00": "Executive_Office"
-    },
-    "nextAvailable": 1
-  },
   "budgets": {
     "enabled": true,
     "companyMonthlyLimit": null,
